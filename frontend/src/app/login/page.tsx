@@ -1,58 +1,22 @@
-"use client";
-import { useState } from "react";
-import axios from "axios";
+import LoginBox from "@/components/LoginBox";
+import Image from "next/image";
 
-const Page = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-
-    const formData = {
-      email: email,
-      password: password,
-    };
-
-    console.log("Form data being sent:", formData);
-
-    try {
-      const res = await axios.post("http://localhost:8000/login", formData);
-      console.log("Response from backend:", res.data);
-      alert("Login successful");
-    } catch (error) {
-      console.error("ERROR WHILE LOGIN", error);
-    }
-  }
-
+export default function Page() {
   return (
-    <main className=" text-3xl flex justify-center items-center h-screen ">
-      <form
-        onSubmit={handleLogin}
-        className=" flex flex-col gap-5 w-fit h-fit p-10 border "
-      >
-        <label htmlFor="email">Email</label>
-        <input
-          type="email"
-          id="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className=" border "
+    <main className="min-h-screen w-full bg-[url('/background_login2.png')] bg-no-repeat bg-cover bg-center flex items-center justify-center p-4 sm:p-45 relative">
+      {/* Header */}
+      <header className="absolute top-0 left-0 w-full px-4 sm:px-10 py-5 flex items-center z-[99]">
+        <Image 
+          src="/logo.png" 
+          alt="LifeGear Logo" 
+          width={250} 
+          height={250} 
+          className="object-contain w-[180px] sm:w-[250px] md:w-[300px]"
         />
-        <label htmlFor="password">Password</label>
-        <input
-          type="password"
-          id="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className=" border "
-        />
-        <button type="submit" className=" cursor-pointer bg-blue-600 ">
-          Login
-        </button>
-      </form>
+      </header>
+
+      {/* Login Box */}
+      <LoginBox />
     </main>
   );
-};
-
-export default Page;
+}

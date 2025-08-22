@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Serif_Thai } from "next/font/google";
 import "./globals.css";
+
+const notoSerifThai = Noto_Serif_Thai({
+  variable: "--font-noto-serif-thai",
+  subsets: ["thai"],
+  weight: ["100","200","300","400","500","600","700","800","900"],
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,13 +25,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
+    <html lang="th">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${notoSerifThai.variable} antialiased`}
       >
         {children}
       </body>
