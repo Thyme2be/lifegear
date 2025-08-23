@@ -1,9 +1,11 @@
 "use client";
 
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import React, { FormEvent, useState } from "react";
 
 const LoginBox = () => {
+  const router = useRouter();
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
 
@@ -11,13 +13,16 @@ const LoginBox = () => {
     e.preventDefault();
 
     try {
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/authenticate/login`, {
-        studentId: studentId,
-        password: password,
-      });
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/authenticate/login`,
+        {
+          studentId: studentId,
+          password: password,
+        }
+      );
 
       if (res.data.success) {
-        alert("Result: " + res.data.message);
+        router.push("/")
       } else {
         alert("Result ERRROR: " + res.data.message);
       }
