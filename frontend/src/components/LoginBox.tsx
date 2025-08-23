@@ -1,6 +1,36 @@
-import React from "react";
+"use client";
+
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import React, { FormEvent, useState } from "react";
 
 const LoginBox = () => {
+  const router = useRouter();
+  const [studentId, setStudentId] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    try {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/authenticate/login`,
+        {
+          studentId: studentId,
+          password: password,
+        }
+      );
+
+      if (res.data.success) {
+        router.push("/")
+      } else {
+        alert("Result ERRROR: " + res.data.message);
+      }
+    } catch (err) {
+      console.error("BACKEND ERROR: " + err);
+    }
+  };
+
   return (
     <section className="w-[90%] max-w-md bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 shadow-2xl">
       <div className="w-full">
@@ -11,7 +41,7 @@ const LoginBox = () => {
           เข้าสู่ระบบ
         </h1>
 
-        <form action="#" className="mt-8 space-y-6">
+        <form action="#" className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {/* Student ID */}
           <div className="space-y-2">
             <label className="block text-base sm:text-lg text-black font-extrabold font-serif-thai">
@@ -21,7 +51,10 @@ const LoginBox = () => {
               type="text"
               required
               placeholder="6xxxxxxxxx"
-              className="w-full h-12 bg-transparent border border-white rounded-2xl px-3 outline-none
+              id="studentId"
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
+              className="w-full h-12 bg-transparent border no-spinner border-white rounded-2xl px-3 outline-none
                  text-black font-serif-thai p-4 font-semibold
                 shadow-[4px_4px_12px_rgba(107,114,128,0.3),-4px_-4px_12px_rgba(107,114,128,0.3)]"
             />
@@ -36,6 +69,9 @@ const LoginBox = () => {
               type="password"
               required
               placeholder="Tsexxxxx"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full h-12 bg-transparent border border-white rounded-2xl px-3 outline-none
                  text-black font-serif-thai p-4 font-semibold
                 shadow-[4px_4px_12px_rgba(107,114,128,0.3),-4px_-4px_12px_rgba(107,114,128,0.3)]"
@@ -45,7 +81,10 @@ const LoginBox = () => {
           {/* Remember & Forgot */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm sm:text-base">
             <label className="flex items-center text-black font-medium space-x-2 font-serif-thai">
-              <input type="checkbox" className="w-5 h-5 sm:w-7 sm:h-7 cursor-pointer" />
+              <input
+                type="checkbox"
+                className="w-5 h-5 sm:w-7 sm:h-7 cursor-pointer"
+              />
               <span>
                 อนุมัติเงื่อนไขบริการ
                 <a
