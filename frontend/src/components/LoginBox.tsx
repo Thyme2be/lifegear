@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import React, { FormEvent, useState } from "react";
 import { toast, ToastContainer, Bounce } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import TermsModal from "./TermsModal";
 
 const LoginBox = () => {
   const router = useRouter();
@@ -103,15 +104,18 @@ const LoginBox = () => {
               <input
                 type="checkbox"
                 className="w-5 h-5 sm:w-7 sm:h-7 cursor-pointer"
+                required
+                onInvalid={(e) =>
+                (e.target as HTMLInputElement).setCustomValidity("กรุณายอมรับเงื่อนไขก่อนเข้าสู่ระบบ")
+              }
+                onInput={(e) =>
+                (e.target as HTMLInputElement).setCustomValidity("")
+         }
+
               />
               <span>
                 อนุมัติเงื่อนไขบริการ
-                <a
-                  href="#"
-                  className="text-blue-700 hover:underline decoration-2 ml-1"
-                >
-                  อ่านเพิ่มเติม
-                </a>
+                <TermsModal />
               </span>
             </label>
           </div>

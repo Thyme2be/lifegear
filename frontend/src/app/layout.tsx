@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Serif_Thai } from "next/font/google";
 import "./globals.css";
 
+
 const notoSerifThai = Noto_Serif_Thai({
   variable: "--font-noto-serif-thai",
   subsets: ["thai"],
