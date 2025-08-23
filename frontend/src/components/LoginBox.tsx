@@ -3,11 +3,18 @@
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import React, { FormEvent, useState } from "react";
+import { toast, ToastContainer, Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const LoginBox = () => {
   const router = useRouter();
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
+
+  // state ของ toast
+  const [toastMsg, setToastMsg] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error" | "">("");
+  const [showToast, setShowToast] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -22,22 +29,37 @@ const LoginBox = () => {
       );
 
       if (res.data.success) {
-        router.push("/")
-      } else {
-        alert("Result ERRROR: " + res.data.message);
-      }
-    } catch (err) {
+  toast.success("เข้าสู่ระบบสำเร็จ!", {
+    position: "top-center",
+    autoClose: 2000,
+    theme: "colored",
+    transition: Bounce,
+  });
+  setTimeout(() => router.push("/"), 2000);
+} else {
+  toast.error(res.data.message, {
+    position: "top-center",
+    autoClose: 3000,
+    theme: "colored",
+    transition: Bounce,
+  });
+} }catch (err) {
       console.error("BACKEND ERROR: " + err);
+      setToastMsg("⚠️ ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+      setToastType("error");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     }
   };
 
   return (
-    <section className="w-[90%] max-w-md bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 shadow-2xl">
+    <section className="relative w-[90%] max-w-md bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 shadow-2xl">
+      {/* Toast ด้านบน */}
+      <ToastContainer /> 
+    <div className="w-full"></div>
+
       <div className="w-full">
-        <h1
-          className="text-3xl sm:text-4xl text-center text-black font-extrabold
-          font-serif-thai"
-        >
+        <h1 className="text-3xl sm:text-4xl text-center text-black font-extrabold font-serif-thai">
           เข้าสู่ระบบ
         </h1>
 
