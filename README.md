@@ -14,3 +14,10 @@ fix:
 - use `
 - use `CMD ["fastapi", "run", "--host", "0.0.0.0", "--port", "8000"]` to run in DockerFile
 - Also `EXPOSE 8000` port 
+
+3. Middleware.ts not working
+Fix: Put the file in `src/middleware.ts`
+
+4. Middleware.ts can not get Cookie
+Fix: In `auth.py` at `res.set_cookie` add `secure=True` <br>
+For deploy: Change to `samesite="none"`

@@ -8,21 +8,26 @@ const LoginBox = () => {
   const router = useRouter();
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
-
+  
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/authenticate/login`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
         {
           studentId: studentId,
           password: password,
+        },
+        {
+          withCredentials: true,
         }
       );
 
       if (res.data.success) {
-        router.push("/")
+        console.log("LOGIN SUCCESS!");
+        // window.location.href = "/";
+        router.push("/");
       } else {
         alert("Result ERRROR: " + res.data.message);
       }
