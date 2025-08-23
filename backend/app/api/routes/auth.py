@@ -63,6 +63,9 @@ def login(req: studentLogin, res: Response):
         httponly=True,
         secure=True,
         samesite="none",
+        path="/",
+        domain="lifegear.vercel.app",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
     return {"success": True, "message": "Login successful"}
@@ -80,6 +83,7 @@ def get_current_user(access_token: str = Cookie(None)):
         return studentId
     except JWTError:
         raise HTTPException(status_code=401, detail="JWT ERROR Invalid token")
+
 
 # --- Logout route (optional) ---
 @router.post("/logout")
