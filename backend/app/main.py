@@ -5,7 +5,7 @@ from api.routes import auth_router
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000", "https://lifegear.fly.dev"
+    "http://localhost:3000", "https://lifegear.vercel.app"
 ]
 
 app.add_middleware(
