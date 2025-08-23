@@ -5,7 +5,7 @@ from api.routes import auth_router
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000",
+    "http://localhost:3000", "https://lifegear.fly.dev"
 ]
 
 app.add_middleware(
