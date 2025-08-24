@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Response, Depends, HTTPException, Cookie
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from schemas.student import studentLogin
 from crud import register_student, query_student_id
 from core.security import verify_password
@@ -55,20 +54,10 @@ def login(req: studentLogin, res: Response):
         SECRET_KEY,
         algorithm=ALGORITHM,
     )
+    
+    print("TOKEN CREATED: " + token)
 
-    # Set HTTP-only cookie
-    res.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        path="/",
-        domain="lifegear.vercel.app",
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-    )
-
-    return {"success": True, "message": "Login successful"}
+    return {"success": True, "message": "Login successful", "access_token": token}
 
 
 # --- Dependency to get current user ---

@@ -6,6 +6,7 @@ import React, { FormEvent, useState } from "react";
 import { toast, ToastContainer, Bounce } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import TermsModal from "./TermsModal";
+import Cookies from "js-cookie";
 
 const LoginBox = () => {
   const router = useRouter();
@@ -19,7 +20,7 @@ const LoginBox = () => {
 
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
+        `http://127.0.0.1:8000/auth/login`,
         {
           studentId: studentId,
           password: password,
@@ -30,6 +31,7 @@ const LoginBox = () => {
       );
 
       if (res.data.success) {
+        Cookies.set("access_token", res.data.access_token, { expires: 7 });
         toast.success("เข้าสู่ระบบสำเร็จ!", {
           position: "top-center",
           autoClose: 2000,
@@ -106,12 +108,13 @@ const LoginBox = () => {
                 className="w-5 h-5 sm:w-7 sm:h-7 cursor-pointer"
                 required
                 onInvalid={(e) =>
-                (e.target as HTMLInputElement).setCustomValidity("กรุณายอมรับเงื่อนไขก่อนเข้าสู่ระบบ")
-              }
+                  (e.target as HTMLInputElement).setCustomValidity(
+                    "กรุณายอมรับเงื่อนไขก่อนเข้าสู่ระบบ"
+                  )
+                }
                 onInput={(e) =>
-                (e.target as HTMLInputElement).setCustomValidity("")
-         }
-
+                  (e.target as HTMLInputElement).setCustomValidity("")
+                }
               />
               <span>
                 อนุมัติเงื่อนไขบริการ
