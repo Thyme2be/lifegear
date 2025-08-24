@@ -13,6 +13,9 @@ const LoginBox = () => {
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
 
+const now = new Date();
+const cookieTimeout = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -29,7 +32,7 @@ const LoginBox = () => {
       );
 
       if (res.data.success) {
-        Cookies.set("access_token", res.data.access_token, { expires: 7 });
+        Cookies.set("access_token", res.data.access_token, { expires: cookieTimeout });
         toast.success("เข้าสู่ระบบสำเร็จ!", {
           position: "top-center",
           autoClose: 2000,
