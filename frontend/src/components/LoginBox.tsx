@@ -13,8 +13,8 @@ const LoginBox = () => {
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
 
-const now = new Date();
-const cookieTimeout = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
+  const now = new Date();
+  const cookieTimeout = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,7 +32,9 @@ const cookieTimeout = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
       );
 
       if (res.data.success) {
-        Cookies.set("access_token", res.data.access_token, { expires: cookieTimeout });
+        Cookies.set("access_token", res.data.access_token, {
+          expires: cookieTimeout,
+        });
         toast.success("เข้าสู่ระบบสำเร็จ!", {
           position: "top-center",
           autoClose: 2000,
@@ -76,6 +78,12 @@ const cookieTimeout = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
               placeholder="6xxxxxxxxx"
               id="studentId"
               value={studentId}
+              onInvalid={(e) =>
+                (e.target as HTMLInputElement).setCustomValidity(
+                  "กรุณากรอกรหัสนักศึกษา"
+                )
+              }
+              onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
               onChange={(e) => setStudentId(e.target.value)}
               className="w-full h-12 bg-transparent border no-spinner border-white rounded-2xl px-3 outline-none
                  text-black font-serif-thai p-4 font-semibold
@@ -94,6 +102,12 @@ const cookieTimeout = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
               placeholder="Tsexxxxx"
               id="password"
               value={password}
+              onInvalid={(e) =>
+                (e.target as HTMLInputElement).setCustomValidity(
+                  "กรุณาใส่รหัสผ่าน"
+                )
+              }
+              onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full h-12 bg-transparent border border-white rounded-2xl px-3 outline-none
                  text-black font-serif-thai p-4 font-semibold
