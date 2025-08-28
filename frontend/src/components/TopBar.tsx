@@ -1,8 +1,8 @@
 import Image from "next/image";
 
-export default function Navbar() {
+export default function TopBar() {
   return (
-    <nav className="w-full bg-white/80 backdrop-blur-md shadow-md px-6 sm:px-10 py-4 flex justify-between items-center fixed top-0 left-0 z-50">
+    <nav className="w-full bg-white/80 backdrop-blur-md shadow-md px-6 sm:px-10 py-4 flex justify-between items-center top-0 left-0 z-50">
       <div className="flex items-center space-x-3">
         <Image src="/logo.png" alt="LifeGear Logo" width={50} height={50} className="object-contain" />
         <span className="font-bold text-xl sm:text-2xl text-black">LifeGear</span>
