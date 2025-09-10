@@ -1,6 +1,8 @@
 # Constraint:
 1. If no api request is made within a certain amount of time, the backend server will automatically shut down and enter idle mode.  Although it takes less than a minute, the server will immediately restart in response to the api request.
 
+2. Auth cookie only last for 30 minutes.
+
 # Bug and Fix Report
 1. Can not register new user from back end to supabase database
 `error: new row violates row-level security policy for table "students"`
