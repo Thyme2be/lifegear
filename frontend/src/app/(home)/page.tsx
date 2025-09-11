@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import BannerSliderWrapper from "@/components/BannerSliderWrapper";
+import Image from "next/image";
+import ProflieInfo from "@/components/ProfileInfo";
 
 export const metadata: Metadata = {
   title: "LifeGear | Homepage",
@@ -7,57 +10,68 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <>
-      <main className="pt-20">
-        {/* Hero Section */}
-        <section className="relative w-full h-[400px] bg-gray-200 flex items-center justify-center">
-          <div className="absolute left-4 text-3xl cursor-pointer">⬅</div>
-          <div className="absolute right-4 text-3xl cursor-pointer">➡</div>
-          <span className="text-gray-500">[แบนเนอร์สไลด์รูปภาพ]</span>
-        </section>
+    <main className="bg-[#f6f1e7]">
+      {/* Hero Section with Slider */}
+      <BannerSliderWrapper />
+      
+      {/* Welcome Section */}
+      <section className="p-6 sm:p-10 my-10 text-center max-w-4xl mx-auto">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#730217] mb-4 text-shadow-lg">
+          ขอต้อนรับเข้าสู่เว็บไซต์ <span className="text-black">LifeGear</span>
+        </h1>
+        <p className="text-[#2E2E2E] leading-relaxed whitespace-pre-line mb-10 text-sm sm:text-base">
+          "...หมดปัญหาสับสนเรื่องตารางเรียนหรือกิจกรรมคณะ! LifeGear ช่วยจัดระเบียบชีวิตนักศึกษาวิศวะให้ลงตัว <br />
+          ด้วยระบบปฏิทินรายเดือนที่รวมทุกอย่างไว้ครบ ทั้งตารางเรียน กิจกรรม และการเพิ่มกิจกรรมส่วนตัว ใช้งานสะดวก <br />
+          ครบจบในเว็บเดียว..."
+        </p>
+      </section>
 
-        {/* Welcome Section */}
-        <section className="text-center my-10">
-          <h1 className="text-2xl font-bold">
-            ขอต้อนรับเข้าสู่เว็บไซต์ <span className="text-blue-600">LifeGear</span>
-          </h1>
-          <div className="mt-6 mx-auto max-w-xl p-6 bg-gray-100 rounded-xl">
-            <p className="text-gray-700">
-              พื้นที่สำหรับแสดงข้อความ แนะนำเว็บไซต์ หรือข่าวสาร
-            </p>
-          </div>
-        </section>
+      {/* Feature Section */}
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
+  {/* การ์ดกิจกรรม */}
+   <div className="flex flex-col items-center text-center max-w-sm mx-auto">
+    <h2 className="text-2xl sm:text-3xl font-bold text-[#730217] text-shadow-lg">กิจกรรมทั้งหมด</h2>
+    <a href="#" className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10">
+      <Image
+        src="/activity.png"
+        alt="Activity Icon"
+        width={420}
+        height={370}
+        className="object-contain mt-8"
+      />
+    </a>
+  </div>
 
-        {/* Feature Section */}
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-5xl mx-auto mb-12">
-          <div className="flex flex-col items-center">
-            <h2 className="font-semibold">กิจกรรม</h2>
-            <div className="p-6 bg-white shadow-md rounded-2xl">
-              <div className="w-24 h-24 bg-gray-200 rounded-xl mb-4 flex items-center justify-center">
-                📌
-              </div>
-            </div>
-          </div>
+  {/* การ์ดรายเดือน */}
+  <div className="flex flex-col items-center text-center max-w-sm mx-auto">
+    <h2 className="text-2xl sm:text-3xl font-bold text-[#730217] text-shadow-lg">ตารางชีวิต</h2>
+    <h3 className="text-lg sm:text-xl font-bold text-[#730217] mb-2 text-shadow-lg">(รายเดือน)</h3>
+    <a href="#" className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10">
+      <Image
+        src="/mothly.png"
+        alt="Monthly Icon"
+        width={420}
+        height={370}
+        className="object-contain"
+      />
+    </a>
+  </div>
 
-          <div className="flex flex-col items-center">
-            <h2 className="font-semibold">ตารางรายเดือน</h2>
-            <div className="p-6 bg-white shadow-md rounded-2xl">
-              <div className="w-24 h-24 bg-gray-200 rounded-xl mb-4 flex items-center justify-center">
-                📅
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <h2 className="font-semibold">ตารางรายวัน</h2>
-            <div className="p-6 bg-white shadow-md rounded-2xl">
-              <div className="w-24 h-24 bg-gray-200 rounded-xl mb-4 flex items-center justify-center">
-                🗓
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-    </>
+  {/* การ์ดรายวัน */}
+  <div className="flex flex-col items-center text-center max-w-sm mx-auto">
+    <h2 className="text-2xl sm:text-3xl font-bold text-[#730217] text-shadow-lg">ตารางชีวิต</h2>
+    <h3 className="text-lg sm:text-xl font-bold text-[#730217] mb-2 text-shadow-lg">(รายวัน)</h3>
+    <a href="#" className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10">
+      <Image
+        src="/daily.png"
+        alt="Daily Icon"
+        width={420}
+        height={370}
+        className="object-contain"
+      />
+    </a>
+  </div>
+</section>
+    </main>
   );
 }
