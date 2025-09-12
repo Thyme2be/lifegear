@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from typing import Annotated
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from schemas.auth import TokenData, User
@@ -13,7 +14,7 @@ import jwt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Adjust by token url endpoint
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/api/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/api/auth/login")
 
 
 def get_hash_password(password: str) -> str:
@@ -37,7 +38,9 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(request: Request):
+    token = request.cookies.get("access_token")
+    print(f"{token=}")
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -54,12 +57,16 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     user = get_user(username=token_data.username)
     if user is None:
         raise credentials_exception
-    return user.data[0]
+    
+    # Remove unneccessary data
+    user.data[0] = {k: v for k, v in user.data[0].items() if k not in ["password", "created_at"]}
+    user_obj = SimpleNamespace(**user.data[0]) # make it object
+    return user_obj
 
 
 async def get_current_active_user(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    if current_user["is_active"]:
+    if current_user.is_active:
         return current_user
     raise HTTPException(status_code=400, detail="Inactive user")

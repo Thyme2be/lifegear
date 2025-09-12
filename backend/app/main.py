@@ -5,7 +5,8 @@ from api.v1.routes import router
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000", "https://lifegear.vercel.app"
+    "http://localhost:3000", 
+    "https://lifegear.vercel.app"
 ]
 
 app.add_middleware(

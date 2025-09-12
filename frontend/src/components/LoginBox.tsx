@@ -4,54 +4,44 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import React, { FormEvent, useState } from "react";
 import { toast, ToastContainer, Bounce } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import TermsModal from "./TermsModal";
-import Cookies from "js-cookie";
+import "react-toastify/dist/ReactToastify.css";
 
 const LoginBox = () => {
   const router = useRouter();
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
 
-  const now = new Date();
-  const cookieTimeout = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
-
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
-        {
-          studentId: studentId,
-          password: password,
-        },
-        {
-          withCredentials: true,
-        }
-      );
+      const formData = new URLSearchParams();
+      formData.append("username", studentId);
+      formData.append("password", password);
 
-      if (res.data.success) {
-        Cookies.set("access_token", res.data.access_token, {
-          expires: cookieTimeout,
-        });
-        toast.success("เข้าสู่ระบบสำเร็จ!", {
-          position: "top-center",
-          autoClose: 2000,
-          theme: "colored",
-          transition: Bounce,
-        });
-        setTimeout(() => router.push("/"), 2000);
-      } else {
-        toast.error(res.data.message, {
-          position: "top-center",
-          autoClose: 3000,
-          theme: "colored",
-          transition: Bounce,
-        });
-      }
+      await axios.post(`http://127.0.0.1:8000/v1/api/auth/login`, formData, {
+        withCredentials: true,
+      });
+
+      // If login is successful, backend has already set HttpOnly cookie
+      toast.success("เข้าสู่ระบบสำเร็จ!", {
+        position: "top-center",
+        autoClose: 2000,
+        theme: "colored",
+        transition: Bounce,
+      });
+
+      setTimeout(() => router.push("/"), 2000);
     } catch (err) {
       console.error("BACKEND ERROR: " + err);
+
+      toast.error("เข้าสู่ระบบผิดพลาด!", {
+        position: "top-center",
+        autoClose: 3000,
+        theme: "colored",
+        transition: Bounce,
+      });
     }
   };
 
@@ -83,7 +73,9 @@ const LoginBox = () => {
                   "กรุณากรอกรหัสนักศึกษา"
                 )
               }
-              onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
+              onInput={(e) =>
+                (e.target as HTMLInputElement).setCustomValidity("")
+              }
               onChange={(e) => setStudentId(e.target.value)}
               className="w-full h-12 bg-transparent border no-spinner border-white rounded-2xl px-3 outline-none
                  text-black font-serif-thai p-4 font-semibold
@@ -107,7 +99,9 @@ const LoginBox = () => {
                   "กรุณาใส่รหัสผ่าน"
                 )
               }
-              onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
+              onInput={(e) =>
+                (e.target as HTMLInputElement).setCustomValidity("")
+              }
               onChange={(e) => setPassword(e.target.value)}
               className="w-full h-12 bg-transparent border border-white rounded-2xl px-3 outline-none
                  text-black font-serif-thai p-4 font-semibold

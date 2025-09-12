@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Serif_Thai } from "next/font/google";
 import "./globals.css";
-
+import AuthGuard from "@/components/AuthGuard";
 
 const notoSerifThai = Noto_Serif_Thai({
   variable: "--font-noto-serif-thai",
   subsets: ["thai"],
-  weight: ["100","200","300","400","500","600","700","800","900"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
 const geistSans = Geist({
@@ -34,7 +34,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoSerifThai.variable} antialiased`}
       >
-        {children}
+        <AuthGuard>
+          {children}
+        </AuthGuard>
       </body>
     </html>
   );

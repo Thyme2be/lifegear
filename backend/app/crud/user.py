@@ -5,7 +5,7 @@ def get_user(username: str):
     return (
         supabase.table("users")
         .select("*")
-        .eq("student_id", username)
+        .eq("username", username)
         .execute()
     )
 
@@ -13,6 +13,6 @@ def get_user(username: str):
 def create_user(username: str, hashed_password: str):
     return (
         supabase.table("users")
-        .insert({"student_id": username, "password": hashed_password})
+        .insert({"username": username, "password": hashed_password})
         .execute()
     )
