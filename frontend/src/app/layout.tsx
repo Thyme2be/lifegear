@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import {Noto_Serif_Thai } from "next/font/google";
-
+import AuthGuard from "@/components/AuthGuard";
 
 const notoSerifThai = Noto_Serif_Thai({
   variable: "--font-noto-serif-thai",
   subsets: ["thai"],
-  weight: ["100","200","300","400","500","600","700","800","900"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -24,7 +24,9 @@ export default function RootLayout({
       <body
         className={`${notoSerifThai.variable} antialiased`}
       >
-        {children}
+        <AuthGuard>
+          {children}
+        </AuthGuard>
       </body>
     </html>
   );

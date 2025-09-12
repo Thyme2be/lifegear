@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes import auth_router
+from api.v1.routes import router
 
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000", "https://lifegear.vercel.app"
+    "http://localhost:3000", 
+    "https://lifegear.vercel.app"
 ]
 
 app.add_middleware(
@@ -16,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router)
+app.include_router(router, prefix="/v1/api/auth", tags=["auth"])
 
 
 @app.get("/")
