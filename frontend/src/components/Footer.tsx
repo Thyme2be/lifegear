@@ -1,4 +1,3 @@
-"use client";
 import Link from "next/link";
 import { FaFacebook } from "react-icons/fa";
 import { SiLine, SiGmail } from "react-icons/si";
