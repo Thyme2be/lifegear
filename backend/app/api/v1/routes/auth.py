@@ -44,7 +44,7 @@ async def auth_check(current_user: Annotated[User, Depends(get_current_active_us
     return {"success": True}
 
 
-@router.get("/users/home", response_model=User)
+@router.get("/user/home", response_model=User)
 async def read_users_home(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
