@@ -4,6 +4,8 @@ import Slider from "react-slick";
 import Image from "next/image";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { FaArrowCircleLeft } from "react-icons/fa";
+import { FaArrowCircleRight } from "react-icons/fa";
 
 function SampleNextArrow(props: any) {
   const { onClick } = props;
@@ -14,7 +16,7 @@ function SampleNextArrow(props: any) {
                  text-white text-2xl sm:text-4xl lg:text-5xl 
                  cursor-pointer z-20"
     >
-      |➡
+      <FaArrowCircleRight />
     </button>
   );
 }
@@ -28,7 +30,7 @@ function SamplePrevArrow(props: any) {
                  text-white text-2xl sm:text-4xl lg:text-5xl 
                  cursor-pointer z-20"
     >
-      ⬅|
+      <FaArrowCircleLeft />
     </button>
   );
 }
