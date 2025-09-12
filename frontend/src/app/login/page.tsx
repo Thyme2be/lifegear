@@ -1,16 +1,31 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import LoginBox from "@/components/LoginBox";
+"use client";
+
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import LoginBox from "@/components/LoginBox";
+import { checkAuth } from "@/lib/checkAuth";
 
-export default async function Page() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("access_token")?.value;
+export default function Page() {
+  const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
 
-  if (token) {
-    // Redirect to home page if user is already logged in
-    redirect("/");
-  }
+  // Bypass authenticated user
+  useEffect(() => {
+    const verifyAuth = async () => {
+      const isAuthenticated = await checkAuth();
+      if (isAuthenticated) {
+        router.replace("/");
+      } else {
+        setIsChecking(false);
+      }
+    };
+
+    verifyAuth();
+  }, [router]);
+
+  // Show a loading state while checking auth
+  if (isChecking) return <div>Checking login status...</div>;
 
   return (
     <main className="min-h-screen w-full bg-[url('/background_login2.png')] bg-no-repeat bg-cover bg-center flex items-center justify-center p-4 sm:p-45 relative">

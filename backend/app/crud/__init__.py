@@ -1,3 +1,3 @@
-from .authenticate import register_student, query_student_id
+from .user import create_user, get_user
 
-__all__ = ["register_student", "query_student_id"]
+__all__ = ["create_user", "get_user"]
