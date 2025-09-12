@@ -1,6 +1,6 @@
 "use client";
 
-import Slider from "react-slick";
+import Slider, { CustomArrowProps } from "react-slick";
 import Image from "next/image";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -9,6 +9,7 @@ import { FaArrowCircleRight } from "react-icons/fa";
 
 import { CustomArrowProps } from "react-slick";
 
+function SampleNextArrow(props: CustomArrowProps) {
 function SampleNextArrow(props: CustomArrowProps) {
   const { onClick } = props;
   return (
@@ -23,6 +24,7 @@ function SampleNextArrow(props: CustomArrowProps) {
   );
 }
 
+function SamplePrevArrow(props: CustomArrowProps) {
 function SamplePrevArrow(props: CustomArrowProps) {
   const { onClick } = props;
   return (

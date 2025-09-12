@@ -12,7 +12,7 @@ export default function Home() {
     <main className="bg-[#f6f1e7]">
       {/* Hero Section with Slider */}
       <BannerSliderWrapper />
-      
+
       {/* Welcome Section */}
       <section className="p-6 sm:p-10 my-10 text-center max-w-4xl mx-auto">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#730217] mb-4 text-shadow-lg">
@@ -27,50 +27,69 @@ export default function Home() {
 
       {/* Feature Section */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
-  {/* การ์ดกิจกรรม */}
-   <div className="flex flex-col items-center text-center max-w-sm mx-auto">
-    <h2 className="text-2xl sm:text-3xl font-bold text-[#730217] text-shadow-lg">กิจกรรมทั้งหมด</h2>
-    <a href="#" className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10">
-      <Image
-        src="/activity.png"
-        alt="Activity Icon"
-        width={420}
-        height={370}
-        className="object-contain mt-8"
-      />
-    </a>
-  </div>
+        {/* การ์ดกิจกรรม */}
+        <div className="flex flex-col items-center text-center max-w-sm mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#730217] text-shadow-lg">
+            กิจกรรมทั้งหมด
+          </h2>
+          <a
+            href="#"
+            className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10"
+          >
+            <Image
+              src="/activity.png"
+              alt="Activity Icon"
+              width={420}
+              height={370}
+              className="object-contain mt-8"
+            />
+          </a>
+        </div>
 
-  {/* การ์ดรายเดือน */}
-  <div className="flex flex-col items-center text-center max-w-sm mx-auto">
-    <h2 className="text-2xl sm:text-3xl font-bold text-[#730217] text-shadow-lg">ตารางชีวิต</h2>
-    <h3 className="text-lg sm:text-xl font-bold text-[#730217] mb-2 text-shadow-lg">(รายเดือน)</h3>
-    <a href="#" className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10">
-      <Image
-        src="/mothly.png"
-        alt="Monthly Icon"
-        width={420}
-        height={370}
-        className="object-contain"
-      />
-    </a>
-  </div>
+        {/* การ์ดรายเดือน */}
+        <div className="flex flex-col items-center text-center max-w-sm mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#730217] text-shadow-lg">
+            ตารางชีวิต
+          </h2>
+          <h3 className="text-lg sm:text-xl font-bold text-[#730217] mb-2 text-shadow-lg">
+            (รายเดือน)
+          </h3>
+          <a
+            href="#"
+            className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10"
+          >
+            <Image
+              src="/mothly.png"
+              alt="Monthly Icon"
+              width={420}
+              height={370}
+              className="object-contain"
+            />
+          </a>
+        </div>
 
-  {/* การ์ดรายวัน */}
-  <div className="flex flex-col items-center text-center max-w-sm mx-auto">
-    <h2 className="text-2xl sm:text-3xl font-bold text-[#730217] text-shadow-lg">ตารางชีวิต</h2>
-    <h3 className="text-lg sm:text-xl font-bold text-[#730217] mb-2 text-shadow-lg">(รายวัน)</h3>
-    <a href="#" className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10">
-      <Image
-        src="/daily.png"
-        alt="Daily Icon"
-        width={420}
-        height={370}
-        className="object-contain"
-      />
-    </a>
-  </div>
-</section>
+        {/* การ์ดรายวัน */}
+        <div className="flex flex-col items-center text-center max-w-sm mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#730217] text-shadow-lg">
+            ตารางชีวิต
+          </h2>
+          <h3 className="text-lg sm:text-xl font-bold text-[#730217] mb-2 text-shadow-lg">
+            (รายวัน)
+          </h3>
+          <a
+            href="#"
+            className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10"
+          >
+            <Image
+              src="/daily.png"
+              alt="Daily Icon"
+              width={420}
+              height={370}
+              className="object-contain"
+            />
+          </a>
+        </div>
+      </section>
     </main>
   );
 }
