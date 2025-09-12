@@ -1,11 +1,11 @@
 "use client";
 
-import Slider from "react-slick";
+import Slider, { CustomArrowProps } from "react-slick";
 import Image from "next/image";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
-function SampleNextArrow(props: any) {
+function SampleNextArrow(props: CustomArrowProps) {
   const { onClick } = props;
   return (
     <button
@@ -19,7 +19,7 @@ function SampleNextArrow(props: any) {
   );
 }
 
-function SamplePrevArrow(props: any) {
+function SamplePrevArrow(props: CustomArrowProps) {
   const { onClick } = props;
   return (
     <button

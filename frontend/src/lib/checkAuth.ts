@@ -5,7 +5,7 @@ export async function checkAuth(): Promise<boolean> {
       credentials: "include",
     });
     return res.ok;
-  } catch (err) {
+  } catch {
     return false;
   }
 }

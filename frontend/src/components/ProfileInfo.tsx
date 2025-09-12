@@ -18,7 +18,7 @@ const ProfileInfo = () => {
     <>
       {/* ============ จอใหญ่ (Desktop / Tablet) ============ */}
       <div className="hidden sm:block relative">
-        <button type="button" onClick={() => setOpen(!open)}>
+        <button type="button" title="Toggle Profile Menu" onClick={() => setOpen(!open)}>
           <Image
             src="/profile.png"
             alt="Profile"
@@ -69,7 +69,7 @@ const ProfileInfo = () => {
 
       {/* ============ จอเล็ก (Mobile) ============ */}
       <div className="sm:hidden relative">
-        <button type="button" onClick={() => setOpen(!open)}>
+        <button type="button" title="Toggle Profile Menu" onClick={() => setOpen(!open)}>
           <Image
             src="/profile.png"
             alt="Profile"
