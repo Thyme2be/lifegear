@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
-from schemas.auth import Token, User
+from schemas.auth import User
 from services.auth import authenticate_user
 from core.security import create_access_token, get_current_active_user
 from core.config import ACCESS_TOKEN_EXPIRE_MINUTES
