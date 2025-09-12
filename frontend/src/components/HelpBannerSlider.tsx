@@ -6,7 +6,9 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { FaArrowCircleLeft, FaArrowCircleRight } from "react-icons/fa";
 
-function SampleNextArrow(props: any) {
+import { CustomArrowProps } from "react-slick";
+
+function SampleNextArrow(props: CustomArrowProps) {
   const { className, style, onClick } = props;
   return (
     <button
@@ -24,7 +26,7 @@ function SampleNextArrow(props: any) {
   );
 }
 
-function SamplePrevArrow(props: any) {
+function SamplePrevArrow(props: CustomArrowProps) {
   const { className, style, onClick } = props;
   return (
     <button

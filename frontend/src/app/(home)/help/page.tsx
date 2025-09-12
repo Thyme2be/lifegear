@@ -1,6 +1,4 @@
-import type { Metadata } from "next";
-import BannerSliderWrapper from "@/components/BannerSliderWrapper";
-import Image from "next/image";
+import type { Metadata } from "next"; 
 import HelpBannerSlider from "@/components/HelpBannerSlider";
 
 export const metadata: Metadata = {
@@ -26,9 +24,9 @@ export default function Home() {
           ขอต้อนรับเข้าสู่เว็บไซต์ <span className="text-black">LifeGear</span>
         </h1>
         <p className="text-[#2E2E2E] leading-relaxed whitespace-pre-line mb-10 text-sm sm:text-base">
-          "...หมดปัญหาสับสนเรื่องตารางเรียนหรือกิจกรรมคณะ! LifeGear ช่วยจัดระเบียบชีวิตนักศึกษาวิศวะให้ลงตัว <br />
+          &quot;...หมดปัญหาสับสนเรื่องตารางเรียนหรือกิจกรรมคณะ! LifeGear ช่วยจัดระเบียบชีวิตนักศึกษาวิศวะให้ลงตัว <br />
           ด้วยระบบปฏิทินรายเดือนที่รวมทุกอย่างไว้ครบ ทั้งตารางเรียน กิจกรรม และการเพิ่มกิจกรรมส่วนตัว ใช้งานสะดวก <br />
-          ครบจบในเว็บเดียว..."
+          ครบจบในเว็บเดียว...&quot;
         </p>
       </section>
     </main>
