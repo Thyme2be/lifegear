@@ -37,7 +37,8 @@ def login(
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # in seconds
     )
 
-    return {"success": True} # Token(access_token=access_token, token_type="bearer")
+    return {"success": True}  # Token(access_token=access_token, token_type="bearer")
+
 
 @router.get("/check")
 async def auth_check(current_user: Annotated[User, Depends(get_current_active_user)]):
@@ -49,3 +50,14 @@ async def read_users_home(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     return current_user
+
+
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        samesite="none",
+        secure=True,
+    )
+    return {"message": "Logged out successfully"}
