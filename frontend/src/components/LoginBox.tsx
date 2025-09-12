@@ -52,14 +52,14 @@ const LoginBox = () => {
       <div className="w-full"></div>
 
       <div className="w-full">
-        <h1 className="text-3xl sm:text-4xl text-center text-black font-extrabold font-serif-thai">
+        <h1 className="text-3xl sm:text-4xl text-center text-black font-extrabold font-serif-thai text-shadow-lg/20">
           เข้าสู่ระบบ
         </h1>
 
         <form action="#" className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {/* Student ID */}
           <div className="space-y-2">
-            <label className="block text-base sm:text-lg text-black font-extrabold font-serif-thai">
+            <label className="block text-base sm:text-lg text-black font-extrabold font-serif-thai text-shadow-lg/20">
               เลขทะเบียนนักศึกษา
             </label>
             <input
@@ -85,7 +85,7 @@ const LoginBox = () => {
 
           {/* Password */}
           <div className="space-y-2">
-            <label className="block text-base sm:text-lg text-black font-extrabold font-serif-thai">
+            <label className="block text-base sm:text-lg text-black font-extrabold font-serif-thai text-shadow-lg/20">
               รหัสผ่าน
             </label>
             <input

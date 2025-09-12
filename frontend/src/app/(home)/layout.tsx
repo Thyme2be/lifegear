@@ -14,11 +14,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <section lang="th"
-      >
+    <section lang="th">
+      <div className={`${notoSerifThai.className} antialiased`}>
         <TopBar />
         {children}
         <Footer />
+      </div>
     </section>
   );
 }

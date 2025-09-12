@@ -35,3 +35,11 @@ body {
     margin: 0;
   }
 }
+
+.slick-slider {
+  position: relative;
+  display: block;
+}
+.slick-dots li button:before {
+  color: white;
+}
