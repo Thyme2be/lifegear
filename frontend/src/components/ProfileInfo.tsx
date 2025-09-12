@@ -12,7 +12,7 @@ type ProfileInfoProps = {
 const handleLogout = async () => {
   try {
     await axios.post(
-      "http://127.0.0.1:8000/v1/api/auth/logout",
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/api/auth/logout`,
       {},
       { withCredentials: true }
     );

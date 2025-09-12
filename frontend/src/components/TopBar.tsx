@@ -13,7 +13,7 @@ export default function TopBar() {
 
   useEffect(() => {
     axios
-      .get("http://127.0.0.1:8000/v1/api/auth/user/home", {
+      .get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/api/auth/user/home`, {
         withCredentials: true,
       })
       .then((res) => setUser(res.data))
