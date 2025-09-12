@@ -20,7 +20,7 @@ const LoginBox = () => {
       formData.append("username", studentId);
       formData.append("password", password);
 
-      await axios.post(`http://127.0.0.1:8000/v1/api/auth/login`, formData, {
+      await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/api/auth/login`, formData, {
         withCredentials: true,
       });
 
