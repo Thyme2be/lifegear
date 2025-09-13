@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from schemas.auth import TokenData, User
 from jwt.exceptions import InvalidTokenError
@@ -12,10 +11,6 @@ import jwt
 
 # Create CryptContext (bcrypt is the default algorithm here)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Adjust by token url endpoint
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/api/auth/login")
-
 
 def get_hash_password(password: str) -> str:
     """Hash the password using bcrypt"""
