@@ -5,6 +5,7 @@ import Image from "next/image";
 import ProfileInfo from "./ProfileInfo";
 import axios from "axios";
 import type { User } from "@/lib/types";
+import Link from "next/link";
 
 export default function TopBar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,19 +37,19 @@ export default function TopBar() {
       {/* เมนูปกติ (Tablet/Desktop) */}
       <ul className="hidden sm:flex space-x-10 text-white font-bold text-lg absolute top-0 right-0 p-4 justify-end items-center">
         <li>
-          <a href="/" className="hover:text-blue-400">
+          <Link href="/" className="hover:text-blue-400">
             หน้าหลัก
-          </a>
+          </Link>
         </li>
         <li>
-          <a href="/activity" className="hover:text-blue-400">
+          <Link href="/activity" className="hover:text-blue-400">
             กิจกรรม
-          </a>
+          </Link>
         </li>
         <li>
-          <a href="/monthly" className="hover:text-blue-400">
+          <Link href="/monthly" className="hover:text-blue-400">
             ตารางชีวิต
-          </a>
+          </Link>
         </li>
         <li>
           <a href="/help" className="hover:text-blue-400">
@@ -92,18 +93,18 @@ export default function TopBar() {
       {/* เมนู Dropdown (มือถือ) */}
       {isOpen && (
         <div className="absolute top-20 left-0 w-full bg-[#730217] text-white flex flex-col items-center py-6 sm:hidden space-y-4">
-          <a href="/" className="hover:text-blue-400">
+          <Link href="/" className="hover:text-blue-400">
             หน้าหลัก
-          </a>
-          <a href="/activity" className="hover:text-blue-400">
+          </Link>
+          <Link href="/activity" className="hover:text-blue-400">
             กิจกรรม
-          </a>
-          <a href="/monthly" className="hover:text-blue-400">
+          </Link>
+          <Link href="/monthly" className="hover:text-blue-400">
             ตารางชีวิต
-          </a>
-          <a href="/help" className="hover:text-blue-400">
+          </Link>
+          <Link href="/help" className="hover:text-blue-400">
             วิธีใช้งาน
-          </a>
+          </Link>
         </div>
       )}
     </nav>
