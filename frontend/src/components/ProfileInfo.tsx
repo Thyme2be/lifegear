@@ -28,7 +28,7 @@ const ProfileInfo = ({ user }: ProfileInfoProps) => {
 
   return (
     <div className="sm:block relative">
-      <div className="absolute top-5 right-0 w-80 max-w-sm bg-red-800 shadow-2xl p-4 rounded-lg z-50">
+      <div className="absolute top-1 right-0 w-80 max-w-sm bg-red-800 shadow-2xl p-4 rounded-lg z-50">
         {/* Header */}
         <div className="flex justify-between items-center border-b border-white pb-2 mb-2">
           <h2 className="text-lg font-bold text-white">ข้อมูลผู้ใช้งาน</h2>

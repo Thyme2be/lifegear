@@ -33,7 +33,7 @@ export default function Home() {
             กิจกรรมทั้งหมด
           </h2>
           <a
-            href="#"
+            href="/activity"
             className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10"
           >
             <Image
@@ -55,7 +55,7 @@ export default function Home() {
             (รายเดือน)
           </h3>
           <a
-            href="#"
+            href="/monthly"
             className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10"
           >
             <Image
@@ -77,7 +77,7 @@ export default function Home() {
             (รายวัน)
           </h3>
           <a
-            href="#"
+            href="/daily"
             className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10"
           >
             <Image
