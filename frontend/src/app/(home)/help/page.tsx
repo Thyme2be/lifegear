@@ -25,10 +25,8 @@ export default function Home() {
   return (
     <main className="bg-[#f6f1e7]">
         {/* หัวข้อหลัก */}
-      <header className="px-4 sm:px-6 lg:px-10 py-10 text-center">
-        <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-[#730217] text-shadow-lg">
+      <header className="px-4 sm:px-6 lg:px-10 py-10 text-center text-2xl sm:text-3xl lg:text-4xl font-bold text-[#730217] text-shadow-lg">
           วิธีใช้งาน LifeGear
-        </h1>
       </header>
 
       {/* Hero Section with Slider */}
