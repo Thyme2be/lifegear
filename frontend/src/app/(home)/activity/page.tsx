@@ -1,95 +1,104 @@
-import React from "react";
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "LifeGear | Activity",
-  description: "Time management for event in Engineering faculty",
-};
+import React, { useState, useEffect } from "react";
+import SearchBox from "@/components/SearchBox";
+import ActivityBanner from "@/components/ActivityList";
+
+const filterOptions = [
+  "ทั้งหมด",
+  "ด้านดนตรี",
+  "ด้านกีฬาและการออกกำลังกาย",
+  "ด้านศิลปะและวัฒนธรรม",
+  "ด้านวิชาการและเทคโนโลยี",
+  "ด้านสังคมและบำเพ็ญประโยชน์",
+  "ด้านวิชาชีพและทักษะอาชีพ",
+  "ด้านนันทนาการและสันทนาการ",
+  "ด้านจิตใจและคุณธรรม",
+  "อื่นๆ",
+];
+
+const activities = [
+  { id: 1, imageSrc: "/activityImages/1.png", altText: "กิจกรรม 1", category: "ด้านจิตใจและคุณธรรม", link: "/subActivity/1" },
+  { id: 2, imageSrc: "/activityImages/3.png", altText: "กิจกรรม 2", category: "ด้านวิชาชีพและทักษะอาชีพ", link: "/subActivity/2" },
+  { id: 3, imageSrc: "/activityImages/5.png", altText: "กิจกรรม 3", category: "ด้านวิชาการและเทคโนโลยี", link: "/subActivity/3" },
+  { id: 4, imageSrc: "/activityImages/7.png", altText: "กิจกรรม 4", category: "ด้านนันทนาการและสันทนาการ", link: "/subActivity/4" },
+  { id: 5, imageSrc: "/activityImages/9.png", altText: "กิจกรรม 5", category: "ด้านวิชาการและเทคโนโลยี", link: "/subActivity/5" },
+  { id: 6, imageSrc: "/activityImages/11.png", altText: "กิจกรรม 6", category: "ด้านกีฬาและการออกกำลังกาย", link: "/subActivity/6" },
+  { id: 7, imageSrc: "/activityImages/13.png", altText: "กิจกรรม 7", category: "ด้านนันทนาการและสันทนาการ", link: "/subActivity/7" },
+  { id: 8, imageSrc: "/activityImages/15.png", altText: "กิจกรรม 8", category: "ด้านนันทนาการและสันทนาการ", link: "/subActivity/8" },
+  { id: 9, imageSrc: "/activityImages/17.png", altText: "กิจกรรม 9", category: "ด้านวิชาชีพและทักษะอาชีพ", link: "/subActivity/9" },
+  { id: 10, imageSrc: "/activityImages/19.png", altText: "กิจกรรม 10", category: "ด้านวิชาการและเทคโนโลยี", link: "/subActivity/10" },
+];
 
 export default function ActivityPage() {
+  const [searchText, setSearchText] = useState("");
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]); // 🟢 เริ่มต้นว่าง
+  const [filteredActivities, setFilteredActivities] = useState(activities);
+
+  const handleFilterChange = (label: string) => {
+    setSelectedFilters((prev) =>
+      prev.includes(label)
+        ? prev.filter((f) => f !== label) // ถ้าเลือกแล้วกดยกเลิก → เอาออก
+        : [...prev, label] // ถ้าเลือกใหม่ → เพิ่มเข้าไป
+    );
+  };
+
+  const handleSearch = () => {
+    // 🟢 ถ้าไม่เลือกอะไรเลย = แสดงทั้งหมด
+    const activeFilters = selectedFilters.length > 0 ? selectedFilters : ["ทั้งหมด"];
+
+    const filtered = activities.filter((act) => {
+      const matchText = act.altText.toLowerCase().includes(searchText.toLowerCase());
+
+      let matchFilter = false;
+      if (activeFilters.includes("ทั้งหมด")) {
+        matchFilter = true;
+      } else if (activeFilters.includes("อื่นๆ")) {
+        matchFilter = !filterOptions.some(
+          (f) => f !== "ทั้งหมด" && f !== "อื่นๆ" && act.category === f
+        );
+      } else {
+        matchFilter = activeFilters.includes(act.category);
+      }
+
+      return matchText && matchFilter;
+    });
+
+    setFilteredActivities(filtered);
+  };
+
   return (
-    <main className="min-h-screen w-full bg-gray-50 p-6 flex flex-col items-center">
-      {/* หัวข้อหลัก */}
-      <h1 className="text-2xl sm:text-3xl font-bold text-center mb-8">
+    <main className="min-h-screen w-full bg-[#f6f1e7] p-6 flex flex-col items-center">
+      <h1 className="mb-8 text-center text-2xl sm:text-3xl lg:text-4xl font-bold text-[#730217]">
         กิจกรรมภายในคณะวิศวกรรมศาสตร์
       </h1>
 
-      <div className="w-full max-w-6xl grid grid-cols-1 sm:grid-cols-4 gap-6">
-        {/* Sidebar ค้นหา */}
-        <aside className="sm:col-span-1 bg-white rounded-xl shadow p-4 space-y-4">
-          {/* ช่องค้นหา */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="ค้นหา..."
-              className="w-full rounded-full border border-gray-300 px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <span className="absolute right-3 top-2.5 text-gray-400">🔍</span>
-          </div>
+      <div className="w-full max-w-6xl grid grid-cols-1 sm:grid-cols-4 gap-6 items-start">
+        <SearchBox
+          searchText={searchText}
+          onSearchTextChange={setSearchText}
+          selectedFilters={selectedFilters}
+          onFilterChange={handleFilterChange}
+          onSubmit={handleSearch}
+        />
 
-          {/* Checkbox filter */}
-          <div className="space-y-2 text-sm">
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" /> <span>ด้านดนตรี</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" /> <span>ด้านกีฬาและการออกกำลังกาย</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" /> <span>ด้านศิลปะและวัฒนธรรม</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" /> <span>ด้านวิชาการและเทคโนโลยี</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" /> <span>ด้านสังคมและบำเพ็ญประโยชน์</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" /> <span>ด้านวิชาชีพและทักษะอาชีพ</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" /> <span>ด้านนันทนาการและสันทนาการ</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" /> <span>ด้านจิตใจและคุณธรรม</span>
-            </label>
-          </div>
-
-          <button className="w-full bg-blue-600 text-white font-bold py-2 rounded-xl hover:bg-blue-700 transition">
-            ค้นหา
-          </button>
-        </aside>
-
-        {/* รายการกิจกรรม */}
         <section className="sm:col-span-3 space-y-6">
-          {[1, 2, 3].map((item) => (
-            <div
-              key={item}
-              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center"
-            >
-              <div className="text-gray-700">
-                <h2 className="font-bold text-lg">กิจกรรมที่ {item}</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  รายละเอียดกิจกรรมสั้น ๆ เพื่อดึงดูดความสนใจของนักศึกษา
-                </p>
-              </div>
-              <div className="flex space-x-3 mt-4 sm:mt-0">
-                <button className="px-4 py-2 rounded-lg border border-gray-400 hover:bg-gray-100 transition">
-                  อ่านเพิ่มเติม
-                </button>
-                <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
-                  ลงทะเบียน
-                </button>
-              </div>
-            </div>
-          ))}
+          {filteredActivities.length > 0 ? (
+            filteredActivities.map((item) => (
+              <ActivityBanner
+                key={item.id}
+                imageSrc={item.imageSrc}
+                altText={item.altText}
+                link={item.link}
+              />
+            ))
+          ) : (
+            <p className="text-gray-500 text-center">
+              ไม่พบกิจกรรมที่ตรงกับการค้นหา
+            </p>
+          )}
         </section>
       </div>
-
-      {/* ช่องทางการติดต่อ */}
-      <footer className="w-full mt-10 bg-white text-center border-t py-6 text-gray-600">
-        ช่องทางการติดต่อ
-      </footer>
     </main>
   );
 }
