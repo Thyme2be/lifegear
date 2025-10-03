@@ -43,3 +43,5 @@ next-env.d.ts
 # virtual environment python
 *.venv
 *__pycache__
+
+make_test_token.py

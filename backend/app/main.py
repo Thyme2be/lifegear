@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.v1.routes import router
+from api.v1.routes import auth_router, activity_router
 
 app = FastAPI()
 
@@ -17,7 +17,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router, prefix="/v1/api/auth", tags=["auth"])
+app.include_router(auth_router, prefix="/v1/api/auth", tags=["auth"])
+app.include_router(activity_router, prefix="/v1/api/activities", tags=["activities"])
 
 
 @app.get("/")
