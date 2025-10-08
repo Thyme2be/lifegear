@@ -1,16 +1,32 @@
 from uuid import uuid4
 from datetime import datetime, timezone
+
+from fastapi import UploadFile
+from services.storage import upload_activity_image
 from db.base import supabase
-from schemas.activity import ActivityCreate, ActivityUpdate, ActivityResponse
+from schemas.activity import (
+    ActivityCreate,
+    ActivityUpdate,
+    ActivityResponse,
+    ActivityThumbnailResponse,
+)
 from typing import List, Dict, Any
 
 
-def create_activity(activity: ActivityCreate, created_by: str) -> str:
+def create_activity(
+    activity: ActivityCreate, image_file: UploadFile, created_by: str
+) -> str:
     """
     Inserts a new activity into the database.
     Returns the UUID of the new activity.
     """
     new_id = str(uuid4())
+
+    if not activity.image_path:  
+        img_public_url = upload_activity_image(
+            activity.category, activity.title, image_file, image_file.filename
+        )
+
     data = {
         "id": new_id,
         "created_by": created_by,
@@ -20,7 +36,7 @@ def create_activity(activity: ActivityCreate, created_by: str) -> str:
         "end_at": activity.end_at.isoformat(),
         "location_text": activity.location_text,
         "contact_info": activity.contact_info,
-        "image_path": activity.image_path,
+        "image_path": activity.image_path if activity.image_path else img_public_url,
         "status": activity.status.value,
         "category": activity.category.value,
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -34,7 +50,7 @@ def create_activity(activity: ActivityCreate, created_by: str) -> str:
     return new_id
 
 
-def get_all_activities() -> ActivityResponse:
+def get_all_detailed_activities() -> ActivityResponse:
     """
     Retrieves all activities from the database, ordered by creation date.
     """
@@ -49,14 +65,28 @@ def get_all_activities() -> ActivityResponse:
     return response.data
 
 
+def get_all_thumbnail_activities() -> ActivityThumbnailResponse:
+    response = (
+        supabase.table("activities")
+        .select("id, title, image_path, start_at, status, category")
+        .order("start_at", desc=True)
+        .execute()
+    )
+    if not response.data:
+        return []
+    return response.data
+
+
 def update_activity(id: str, activity_update: ActivityUpdate) -> List[Dict[str, Any]]:
     """
     Updates an activity in the database.
     """
     # Fetch existing activity to validate start_at/end_at
-    existing_activity_res = supabase.table("activities").select("start_at, end_at").eq("id", id).execute()
+    existing_activity_res = (
+        supabase.table("activities").select("start_at, end_at").eq("id", id).execute()
+    )
     if not existing_activity_res.data:
-        return [] # Not found
+        return []  # Not found
 
     existing_activity = existing_activity_res.data[0]
 
@@ -66,13 +96,21 @@ def update_activity(id: str, activity_update: ActivityUpdate) -> List[Dict[str, 
     # We need to parse them to datetime objects for comparison.
     start_at_str = update_data.get("start_at")
     if start_at_str:
-        start_at = start_at_str if isinstance(start_at_str, datetime) else datetime.fromisoformat(start_at_str)
+        start_at = (
+            start_at_str
+            if isinstance(start_at_str, datetime)
+            else datetime.fromisoformat(start_at_str)
+        )
     else:
         start_at = datetime.fromisoformat(existing_activity["start_at"])
 
     end_at_str = update_data.get("end_at")
     if end_at_str:
-        end_at = end_at_str if isinstance(end_at_str, datetime) else datetime.fromisoformat(end_at_str)
+        end_at = (
+            end_at_str
+            if isinstance(end_at_str, datetime)
+            else datetime.fromisoformat(end_at_str)
+        )
     else:
         end_at = datetime.fromisoformat(existing_activity["end_at"])
 
