@@ -4,6 +4,7 @@ import axios from "axios";
 import { CgProfile } from "react-icons/cg";
 import { FaIdCard } from "react-icons/fa";
 import type { User } from "@/lib/types";
+import { apiRoutes } from "@/lib/apiRoutes";
 
 type ProfileInfoProps = {
   user: User | null;
@@ -12,7 +13,7 @@ type ProfileInfoProps = {
 const handleLogout = async () => {
   try {
     await axios.post(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/api/auth/logout`,
+      apiRoutes.postLogout,
       {},
       { withCredentials: true }
     );

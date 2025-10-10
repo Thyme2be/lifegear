@@ -1,31 +1,66 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from api.v1.dependencies import get_activity_form
+from services.activity_service import check_activity_exist
 from crud.activity import (
     create_activity,
     get_all_detailed_activities,
     get_all_thumbnail_activities,
     delete_activity,
+    get_activity_dates,
     update_activity,
 )
 from core.security import get_current_user, get_current_active_user
 from schemas.activity import (
     ActivityCreate,
+    ActivityCategory,
+    ActivityStatus,
     ActivityThumbnailResponse,
-    ActivityUpdate,
+    ActivityUpdateForm,
     ActivityResponse,
+    ContactType,
 )
 from schemas.auth import User
+from pydantic import ValidationError
 from typing import List, Optional
 from uuid import UUID
+from datetime import datetime, timezone
+import json
 
 
 activity_router = APIRouter()
 
 
+# Temp Debug
+# @activity_router.post("/debug", status_code=status.HTTP_200_OK)
+# async def debug_form_upload(title: str = Form(...), image_file: UploadFile = File(...)):
+#     """
+#     A simple endpoint to debug form and file uploads.
+#     """
+#     print("--- DEBUG ENDPOINT HIT ---")
+#     print(f"Title received: {title}")
+#     print(f"Image filename received: {image_file.filename}")
+#     print(f"Image content type: {image_file.content_type}")
+
+#     return {
+#         "message": "Debug endpoint received data successfully!",
+#         "received_title": title,
+#         "received_filename": image_file.filename,
+#     }
+
+
 @activity_router.post("/", status_code=status.HTTP_201_CREATED)
-def add_activity(
-    activity: ActivityCreate,
+async def add_activity(
+    title: str = Form(...),
+    description: str = Form(...),
+    start_at: datetime = Form(...),
+    end_at: datetime = Form(...),
+    location_text: str = Form(...),
+    contact_info: str = Form(...),
+    status: ActivityStatus = Form(...),
+    category: ActivityCategory = Form(...),
+    image_path: str = Form(None),
+    image_file: UploadFile = File(None),
     current_user: User = Depends(get_current_user),
-    image_file: UploadFile = Form(...),
 ):
     if current_user.role not in ["officer", "admin"]:
         raise HTTPException(
@@ -34,11 +69,41 @@ def add_activity(
         )
 
     try:
-        new_id = create_activity(activity, image_file, current_user.id)
+        # Step 1: Load the JSON string into a Python dict
+        loaded_contact_info = json.loads(contact_info)
+
+        # Step 2: Convert string keys to ContactType enum members
+        contact_info_data = {
+            ContactType(key): value for key, value in loaded_contact_info.items()
+        }
+    except (json.JSONDecodeError, ValueError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid contact_info: {e}")
+
+    try:
+        activity = ActivityCreate(
+            title=title,
+            description=description,
+            start_at=start_at,
+            end_at=end_at,
+            location_text=location_text,
+            contact_info=contact_info_data,
+            status=status,
+            category=category,
+            image_path=image_path,
+        )
+    except ValidationError as e:
+        # Pydantic's validation error is more specific
+        raise HTTPException(status_code=422, detail=e.errors())
+    try:
+        new_id = await create_activity(activity, image_file, current_user.id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    return {"id": new_id, "message": "Activity created successfully", "success": True}
+    return {
+        "id": new_id,
+        "message": "Activity created successfully",
+        "success": True,
+    }
 
 
 # Endpoint for thumbnail-only activities
@@ -54,21 +119,23 @@ def read_thumbnail_activities(
 
 
 # Endpoint for full detailed activities
-@activity_router.get("/", response_model=List[ActivityResponse])
-def read_detailed_activities(
-    current_active_user: User = Depends(get_current_active_user),
-):
-    try:
-        activities = get_all_detailed_activities()
-        return activities
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @activity_router.get("/", response_model=List[ActivityResponse])
+# def read_detailed_activities(
+#     current_active_user: User = Depends(get_current_active_user),
+# ):
+#     try:
+#         activities = get_all_detailed_activities()
+#         return activities
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Update Data
 @activity_router.patch("/{activity_id}", response_model=ActivityResponse)
-def edit_activity(
+async def edit_activity(
     activity_id: UUID,
-    activity_update: ActivityUpdate,
+    form_data: ActivityUpdateForm = Depends(get_activity_form),
+    image_file: Optional[UploadFile] = File(None),
     current_user: User = Depends(get_current_user),
 ):
     if current_user.role not in ["officer", "admin"]:
@@ -77,18 +144,55 @@ def edit_activity(
             detail="You do not have permission to update activities",
         )
 
-    try:
-        updated_activity = update_activity(str(activity_id), activity_update)
-        if not updated_activity:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Activity with id {activity_id} not found",
-            )
-        return updated_activity[0]
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    existing_activity_date = get_activity_dates(str(activity_id))
+    if not existing_activity_date:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Activity not found",
+        )
+
+    if not existing_activity_date:
+        raise HTTPException(status_code=404, detail="Activity date details not found")
+
+    existing_activity = ActivityUpdateForm(**existing_activity_date)
+
+    # Date validation
+    start_at = form_data.start_at if form_data.start_at else existing_activity.start_at
+    if start_at and start_at.tzinfo is None:
+        start_at = start_at.replace(tzinfo=timezone.utc)
+    else:
+        start_at = existing_activity.start_at
+
+    end_at = form_data.end_at if form_data.end_at else existing_activity.end_at
+    if end_at and end_at.tzinfo is None:
+        end_at = end_at.replace(tzinfo=timezone.utc)
+    else:
+        end_at = existing_activity.end_at
+
+    if end_at < start_at:
+        raise HTTPException(
+            status_code=422,
+            detail=[
+                {"loc": ["body", "end_at"], "msg": "end_at must be after start_at"}
+            ],
+        )
+
+    update_data = form_data.model_dump(
+        mode="json", exclude_unset=True, exclude_none=True
+    )
+
+    # The `contact_info` from the form is a string, we need to parse it.
+    if "contact_info" in update_data and isinstance(update_data["contact_info"], str):
+        try:
+            loaded_contact_info = json.loads(update_data["contact_info"])
+            update_data["contact_info"] = {
+                ContactType(k): v for k, v in loaded_contact_info.items()
+            }
+        except (json.JSONDecodeError, ValueError) as e:
+            raise HTTPException(status_code=400, detail=f"Invalid contact_info: {e}")
+
+    updated_activity = await update_activity(str(activity_id), update_data, image_file)
+    return updated_activity
 
 
 @activity_router.delete("/{activity_id}", status_code=status.HTTP_200_OK)

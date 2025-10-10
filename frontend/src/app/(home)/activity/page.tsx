@@ -5,14 +5,12 @@ import ActivityList from "@/components/ActivityList";
 import axios from "axios";
 import { ActivityThumbnailResponse } from "@/lib/types";
 import SearchBox from "@/components/SearchBox";
+import { ActivityCategory } from "@/lib/enums/activity";
+import { apiRoutes } from "@/lib/apiRoutes";
 
-// Define your filter options somewhere
 const filterOptions = [
-  "ทั้งหมด",
-  "academics",
-  "recreations",
-  "socials",
-  "อื่นๆ",
+  "ทั้งหมด", // "All" option
+  ...Object.values(ActivityCategory),
 ];
 
 export default function ActivityPage() {
@@ -28,10 +26,9 @@ export default function ActivityPage() {
   useEffect(() => {
     setLoading(true);
     axios
-      .get<ActivityThumbnailResponse[]>(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/api/activities/thumbnails`,
-        { withCredentials: true }
-      )
+      .get<ActivityThumbnailResponse[]>(apiRoutes.getAllActivitiesThumbnails, {
+        withCredentials: true,
+      })
       .then((response) => {
         setActivities(response.data);
         setFilteredActivities(response.data); // initialize filteredActivities
@@ -64,9 +61,9 @@ export default function ActivityPage() {
       let matchFilter = false;
       if (activeFilters.includes("ทั้งหมด")) {
         matchFilter = true;
-      } else if (activeFilters.includes("อื่นๆ")) {
+      } else if (activeFilters.includes("other")) {
         matchFilter = !filterOptions.some(
-          (f) => f !== "ทั้งหมด" && f !== "อื่นๆ" && activity.category === f
+          (f) => f !== "ทั้งหมด" && f !== "other" && activity.category === f
         );
       } else {
         matchFilter = activeFilters.includes(activity.category);

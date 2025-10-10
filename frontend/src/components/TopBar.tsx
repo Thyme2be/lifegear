@@ -6,6 +6,7 @@ import ProfileInfo from "./ProfileInfo";
 import axios from "axios";
 import type { User } from "@/lib/types";
 import Link from "next/link";
+import { apiRoutes } from "@/lib/apiRoutes";
 
 export default function TopBar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +15,7 @@ export default function TopBar() {
 
   useEffect(() => {
     axios
-      .get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/api/auth/user/home`, {
+      .get(apiRoutes.getUserHomeData, {
         withCredentials: true,
       })
       .then((res) => setUser(res.data))

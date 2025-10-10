@@ -1,19 +1,22 @@
 from uuid import uuid4
 from datetime import datetime, timezone
 
-from fastapi import UploadFile
-from services.storage import upload_activity_image
+from fastapi import HTTPException, UploadFile
+from services.activity_service import (
+    delete_activity_image,
+    move_activity_image,
+    upload_activity_image,
+)
 from db.base import supabase
 from schemas.activity import (
     ActivityCreate,
-    ActivityUpdate,
     ActivityResponse,
     ActivityThumbnailResponse,
+    ActivityUpdateForm,
 )
-from typing import List, Dict, Any
 
 
-def create_activity(
+async def create_activity(
     activity: ActivityCreate, image_file: UploadFile, created_by: str
 ) -> str:
     """
@@ -22,9 +25,10 @@ def create_activity(
     """
     new_id = str(uuid4())
 
-    if not activity.image_path:  
-        img_public_url = upload_activity_image(
-            activity.category, activity.title, image_file, image_file.filename
+    img_public_url = activity.image_path
+    if not img_public_url and image_file:
+        img_public_url = await upload_activity_image(
+            activity.category.value, activity.title, image_file, image_file.filename
         )
 
     data = {
@@ -36,7 +40,7 @@ def create_activity(
         "end_at": activity.end_at.isoformat(),
         "location_text": activity.location_text,
         "contact_info": activity.contact_info,
-        "image_path": activity.image_path if activity.image_path else img_public_url,
+        "image_path": img_public_url,
         "status": activity.status.value,
         "category": activity.category.value,
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -77,64 +81,76 @@ def get_all_thumbnail_activities() -> ActivityThumbnailResponse:
     return response.data
 
 
-def update_activity(id: str, activity_update: ActivityUpdate) -> List[Dict[str, Any]]:
+def get_activity_dates(activity_id: str) -> dict | None:
+    """
+    Retrieves start_at and end_at for a single activity by its ID.
+    """
+
+    response = (
+        supabase.table("activities")
+        .select("start_at, end_at")
+        .eq("id", activity_id)
+        .execute()
+    )
+
+    if not response.data:
+        return None
+
+    return response.data[0]
+
+
+async def update_activity(
+    activity_id: str, update_data: dict, image_file: UploadFile | None
+) -> ActivityUpdateForm:
     """
     Updates an activity in the database.
     """
-    # Fetch existing activity to validate start_at/end_at
-    existing_activity_res = (
-        supabase.table("activities").select("start_at, end_at").eq("id", id).execute()
-    )
-    if not existing_activity_res.data:
-        return []  # Not found
+    hasCategory = True if "category" in update_data else False
+    hasTitle = True if "title" in update_data else False
 
-    existing_activity = existing_activity_res.data[0]
+    if image_file:
+        # delete the exists one
+        # delete_activity_image(activity_id)
 
-    update_data = activity_update.model_dump(exclude_unset=True)
+        if not hasCategory:
+            # fetch a category
+            catagory_old = (
+                supabase.table("activities")
+                .select("category")
+                .eq("id", activity_id)
+                .execute()
+            )
 
-    # Pydantic model_dump gives datetime objects. The DB returns strings.
-    # We need to parse them to datetime objects for comparison.
-    start_at_str = update_data.get("start_at")
-    if start_at_str:
-        start_at = (
-            start_at_str
-            if isinstance(start_at_str, datetime)
-            else datetime.fromisoformat(start_at_str)
+        update_data["category"] = (
+            update_data["category"] if hasCategory else catagory_old.data[0]["category"]
         )
-    else:
-        start_at = datetime.fromisoformat(existing_activity["start_at"])
+        update_data["title"] = update_data["title"] if hasTitle else image_file.filename
 
-    end_at_str = update_data.get("end_at")
-    if end_at_str:
-        end_at = (
-            end_at_str
-            if isinstance(end_at_str, datetime)
-            else datetime.fromisoformat(end_at_str)
+        # create a new one
+        img_public_url = await upload_activity_image(
+            update_data["category"],
+            update_data["title"],
+            image_file,
+            image_file.filename,
         )
-    else:
-        end_at = datetime.fromisoformat(existing_activity["end_at"])
+        update_data["image_path"] = img_public_url
 
-    if end_at <= start_at:
-        raise ValueError("end_at must be after start_at")
+        if hasCategory:
+            move_activity_image(activity_id, update_data["category"])
 
-    # Convert enums to their string values for DB update
-    if "status" in update_data and update_data["status"]:
-        update_data["status"] = update_data["status"].value
-    if "category" in update_data and update_data["category"]:
-        update_data["category"] = update_data["category"].value
-
-    # Convert datetimes back to isoformat strings for Supabase
-    if "start_at" in update_data and isinstance(update_data["start_at"], datetime):
-        update_data["start_at"] = update_data["start_at"].isoformat()
-    if "end_at" in update_data and isinstance(update_data["end_at"], datetime):
-        update_data["end_at"] = update_data["end_at"].isoformat()
+    if hasCategory and (not image_file):
+        move_activity_image(activity_id, update_data["category"])
 
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
-    response = supabase.table("activities").update(update_data).eq("id", id).execute()
-    return response.data
+    response = (
+        supabase.table("activities").update(update_data).eq("id", activity_id).execute()
+    )
+
+    return response.data[0]
 
 
 def delete_activity(id):
+    delete_activity_image(id)
     response = supabase.table("activities").delete().eq("id", id).execute()
     if not response.data:
         return []

@@ -17,8 +17,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router, prefix="/v1/api/auth", tags=["auth"])
-app.include_router(activity_router, prefix="/v1/api/activities", tags=["activities"])
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(activity_router, prefix="/api/v1/activities", tags=["activities"])
 
 
 @app.get("/")
