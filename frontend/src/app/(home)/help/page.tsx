@@ -25,10 +25,9 @@ export default function Home() {
   return (
     <main className="bg-[#f6f1e7]">
         {/* หัวข้อหลัก */}
-      <header className="px-4 sm:px-6 lg:px-10 py-10 text-center text-2xl sm:text-3xl lg:text-4xl font-bold text-[#730217] text-shadow-lg">
+      <header className="px-4 sm:px-6 lg:px-10 py-10 heading text-[#730217] text-center">
           วิธีใช้งาน LifeGear
       </header>
-
       {/* Hero Section with Slider */}
       <HelpBannerSlider />
       
@@ -37,7 +36,7 @@ export default function Home() {
       {/* หัวข้อ */}
       <div className="flex items-center gap-3 mb-8">
         <FaQuestionCircle className="text-[#730217] text-3xl" />
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#730217] text-shadow-lg">
+        <h1 className="heading text-[#730217]">
           คำถามที่พบบ่อย (FAQ) – LifeGear
         </h1>
       </div>
