@@ -12,6 +12,7 @@ import jwt
 # Create CryptContext (bcrypt is the default algorithm here)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def get_hash_password(password: str) -> str:
     """Hash the password using bcrypt"""
     return pwd_context.hash(password)
@@ -51,10 +52,12 @@ async def get_current_user(request: Request):
     user = get_user(username=token_data.username)
     if user is None:
         raise credentials_exception
-    
+
     # Remove unneccessary data
-    user.data[0] = {k: v for k, v in user.data[0].items() if k not in ["password", "created_at"]}
-    user_obj = SimpleNamespace(**user.data[0]) # make it object
+    user.data[0] = {
+        k: v for k, v in user.data[0].items() if k not in ["password", "created_at"]
+    }  # Omit password and created_at
+    user_obj = SimpleNamespace(**user.data[0])  # make it object
     return user_obj
 
 

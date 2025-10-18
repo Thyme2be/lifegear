@@ -1,3 +1,4 @@
-from .auth import router as router
+from .auth import auth_router
+from .activity import activity_router
 
-__all__ = ["router"]
+__all__ = ["auth_router", "activity_router"]

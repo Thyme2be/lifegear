@@ -1,72 +1,123 @@
 "use client";
 
-import React from "react";
+import React, { useId, useMemo } from "react";
 import { IoIosSearch } from "react-icons/io";
+import { ActivityCategory, CategoryLabels } from "@/lib/enums/activity";
+import clsx from "clsx";
 
-interface SearchBoxProps {
+export interface SearchBoxProps {
   searchText: string;
   onSearchTextChange: (value: string) => void;
-  selectedFilters: string[];
-  onFilterChange: (value: string) => void;
-  onSubmit?: () => void;
+  selectedFilters: ActivityCategory[];
+  onFilterChange: (value: ActivityCategory) => void;
+  onSubmit?: () => void;           
+  isLoading?: boolean;        
+  className?: string;               
 }
 
-const filterOptions = [
-  "ทั้งหมด",
-  "ด้านดนตรี",
-  "ด้านกีฬาและการออกกำลังกาย",
-  "ด้านศิลปะและวัฒนธรรม",
-  "ด้านวิชาการและเทคโนโลยี",
-  "ด้านสังคมและบำเพ็ญประโยชน์",
-  "ด้านวิชาชีพและทักษะอาชีพ",
-  "ด้านนันทนาการและสันทนาการ",
-  "ด้านจิตใจและคุณธรรม",
-  "อื่นๆ",
-];
+// สร้างครั้งเดียวที่โมดูลระดับบน ลด re-render cost
+const FILTER_OPTIONS: ActivityCategory[] = Object.values(ActivityCategory) as ActivityCategory[];
 
-export default function SearchBox({
+function SearchBoxBase({
   searchText,
   onSearchTextChange,
   selectedFilters,
   onFilterChange,
   onSubmit,
+  isLoading = false,
+  className,
 }: SearchBoxProps) {
+  const groupId = useId();
+
+  // ป้องกัน CategoryLabels[category] undefined (เชิงป้องกันไว้)
+  const items = useMemo(
+    () =>
+      FILTER_OPTIONS.map((category) => ({
+        category,
+        label: CategoryLabels[category] ?? String(category),
+      })),
+    []
+  );
+
+  const handleFormSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
+    e.preventDefault();
+    onSubmit?.();
+  };
+
   return (
-    <aside className="sm:col-span-1 bg-white rounded-4xl shadow p-4 space-y-4">
-      {/* ช่องค้นหา */}
-      <div className="relative">
-        <input
-          type="text"
-          value={searchText}
-          onChange={(e) => onSearchTextChange(e.target.value)}
-          placeholder="ค้นหา..."
-          className="w-full rounded-full border shadow-md border-white px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-gray-300"
-        />
-        {/* ไอคอน search */}
-        <IoIosSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-black text-xl pointer-events-none" />
-      </div>
+    <aside
+      className={clsx(
+        "sm:col-span-1 bg-white rounded-4xl shadow p-4 space-y-4",
+        className
+      )}
+      aria-label="ตัวกรองและค้นหากิจกรรม"
+    >
+      <form onSubmit={handleFormSubmit} className="space-y-4">
+        {/* ช่องค้นหา */}
+        <div className="relative">
+          <input
+            type="text"
+            value={searchText}
+            onChange={(e) => onSearchTextChange(e.target.value)}
+            placeholder="ค้นหา..."
+            aria-label="ค้นหากิจกรรม"
+            autoComplete="off"
+            className="w-full rounded-full border border-gray-200 bg-white px-4 py-2 pr-10 shadow-md focus:outline-none focus:ring-2 focus:ring-gray-300"
+          />
+          <IoIosSearch
+            aria-hidden="true"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-black text-xl pointer-events-none"
+          />
+        </div>
 
-      {/* Checkbox filter */}
-      <div className="space-y-2 text-sm">
-       {filterOptions.map((label, idx) => (
-          <label key={idx} className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={selectedFilters.includes(label)}
-              onChange={() => onFilterChange(label)}
-              className="cursor-pointer shadow-[4px_4px_12px_rgba(156,163,175,0.25),-4px_-4px_12px_rgba(156,163,175,0.25)]"
+        {/* Checkbox filter */}
+        <fieldset
+          aria-labelledby={`${groupId}-legend`}
+          className="space-y-2 text-sm"
+        >
+          <legend id={`${groupId}-legend`} className="sr-only">
+            เลือกหมวดหมู่กิจกรรม
+          </legend>
 
-            />
-            <span>{label}</span>
-          </label>
-        ))}
-      </div>
+          <ul className="space-y-2">
+            {items.map(({ category, label }) => {
+              const id = `${groupId}-${category}`;
+              const checked = selectedFilters.includes(category);
+              return (
+                <li key={category} className="flex items-center">
+                  <input
+                    id={id}
+                    name="activity-categories"
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => onFilterChange(category)}
+                    className="mr-2 h-4 w-4 rounded border-gray-300 focus:ring-2 focus:ring-gray-300"
+                  />
+                  <label htmlFor={id} className="cursor-pointer select-none">
+                    {label}
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </fieldset>
 
-      <button 
-       onClick={onSubmit}
-      className="w-full bg-[#F1D500] text-black font-bold py-2 rounded-full shadow-md hover:bg-[#e0c603] transition cursor-pointer">
-        ค้นหา
-      </button>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className={clsx(
+            "w-full rounded-full py-2 font-bold shadow-md transition",
+            "bg-[#F1D500] text-black hover:bg-[#e0c603]",
+            isLoading && "opacity-70 cursor-not-allowed"
+          )}
+          aria-busy={isLoading || undefined}
+        >
+          {isLoading ? "กำลังค้นหา..." : "ค้นหา"}
+        </button>
+      </form>
     </aside>
   );
 }
+
+const SearchBox = React.memo(SearchBoxBase);
+export default SearchBox;

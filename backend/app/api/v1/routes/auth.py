@@ -12,11 +12,11 @@ from core.security import (
 from core.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from datetime import timedelta
 
-router = APIRouter()
+auth_router = APIRouter()
 
 
 # --- Login route ---
-@router.post("/login")
+@auth_router.post("/login")
 def login(
     response: Response, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
@@ -45,7 +45,7 @@ def login(
     return {"success": True}
 
 
-@router.post("/register")
+@auth_router.post("/register")
 async def register_user(user: UserRegister):
     try:
         # Hash password before storing
@@ -67,19 +67,19 @@ async def register_user(user: UserRegister):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/check")
+@auth_router.get("/check")
 async def auth_check(current_user: Annotated[User, Depends(get_current_active_user)]):
     return {"success": True}
 
 
-@router.get("/user/home", response_model=User)
+@auth_router.get("/user/home", response_model=User)
 async def read_users_home(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     return current_user
 
 
-@router.post("/logout")
+@auth_router.post("/logout")
 def logout(response: Response):
     response.delete_cookie(
         key="access_token",

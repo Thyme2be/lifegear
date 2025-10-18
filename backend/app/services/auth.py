@@ -1,4 +1,3 @@
-from types import SimpleNamespace
 from crud.user import create_user, get_user
 from core.security import verify_password, get_hash_password
 

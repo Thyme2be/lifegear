@@ -1,75 +1,126 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import ActivityList from "@/components/ActivityList";
+import { ActivityThumbnailResponse } from "@/lib/types";
 import SearchBox from "@/components/SearchBox";
-import ActivityBanner from "@/components/ActivityList";
+import { ActivityCategory } from "@/lib/enums/activity";
+import { apiRoutes } from "@/lib/apiRoutes";
 
-const filterOptions = [
-  "ทั้งหมด",
-  "ด้านดนตรี",
-  "ด้านกีฬาและการออกกำลังกาย",
-  "ด้านศิลปะและวัฒนธรรม",
-  "ด้านวิชาการและเทคโนโลยี",
-  "ด้านสังคมและบำเพ็ญประโยชน์",
-  "ด้านวิชาชีพและทักษะอาชีพ",
-  "ด้านนันทนาการและสันทนาการ",
-  "ด้านจิตใจและคุณธรรม",
-  "อื่นๆ",
-];
+const FILTER_OPTIONS = Object.values(ActivityCategory) as ActivityCategory[];
 
-const activities = [
-  { id: 1, imageSrc: "/activityImages/1.png", altText: "กิจกรรม 1", category: "ด้านจิตใจและคุณธรรม", link: "/subActivity/1" },
-  { id: 2, imageSrc: "/activityImages/3.png", altText: "กิจกรรม 2", category: "ด้านวิชาชีพและทักษะอาชีพ", link: "/subActivity/2" },
-  { id: 3, imageSrc: "/activityImages/5.png", altText: "กิจกรรม 3", category: "ด้านวิชาการและเทคโนโลยี", link: "/subActivity/3" },
-  { id: 4, imageSrc: "/activityImages/7.png", altText: "กิจกรรม 4", category: "ด้านนันทนาการและสันทนาการ", link: "/subActivity/4" },
-  { id: 5, imageSrc: "/activityImages/9.png", altText: "กิจกรรม 5", category: "ด้านวิชาการและเทคโนโลยี", link: "/subActivity/5" },
-  { id: 6, imageSrc: "/activityImages/11.png", altText: "กิจกรรม 6", category: "ด้านกีฬาและการออกกำลังกาย", link: "/subActivity/6" },
-  { id: 7, imageSrc: "/activityImages/13.png", altText: "กิจกรรม 7", category: "ด้านนันทนาการและสันทนาการ", link: "/subActivity/7" },
-  { id: 8, imageSrc: "/activityImages/15.png", altText: "กิจกรรม 8", category: "ด้านนันทนาการและสันทนาการ", link: "/subActivity/8" },
-  { id: 9, imageSrc: "/activityImages/17.png", altText: "กิจกรรม 9", category: "ด้านวิชาชีพและทักษะอาชีพ", link: "/subActivity/9" },
-  { id: 10, imageSrc: "/activityImages/19.png", altText: "กิจกรรม 10", category: "ด้านวิชาการและเทคโนโลยี", link: "/subActivity/10" },
-];
+const NORMALIZE_MAP: Record<string, ActivityCategory> = {
+  academic: ActivityCategory.Academics,
+  academics: ActivityCategory.Academics,
+  recreation: ActivityCategory.Recreations,
+  recreations: ActivityCategory.Recreations,
+  social: ActivityCategory.Socials,
+  socials: ActivityCategory.Socials,
+  other: ActivityCategory.Others,
+  others: ActivityCategory.Others,
+};
+
+function normalizeCategory(input: unknown): ActivityCategory | null {
+  if (typeof input !== "string") return null;
+  const val = input.toLowerCase();
+
+  if (val in NORMALIZE_MAP) return NORMALIZE_MAP[val];
+
+  if ((Object.values(ActivityCategory) as string[]).includes(val)) {
+    return val as ActivityCategory;
+  }
+  return null;
+}
+
+type MaybeCategory = {
+  category?: unknown;
+  category_code?: unknown;
+};
 
 export default function ActivityPage() {
-  const [searchText, setSearchText] = useState("");
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]); // 🟢 เริ่มต้นว่าง
-  const [filteredActivities, setFilteredActivities] = useState(activities);
+  const [activities, setActivities] = useState<ActivityThumbnailResponse[]>([]);
+  const [filteredActivities, setFilteredActivities] = useState<ActivityThumbnailResponse[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFilterChange = (label: string) => {
-    setSelectedFilters((prev) =>
-      prev.includes(label)
-        ? prev.filter((f) => f !== label) // ถ้าเลือกแล้วกดยกเลิก → เอาออก
-        : [...prev, label] // ถ้าเลือกใหม่ → เพิ่มเข้าไป
-    );
-  };
+  const [searchText, setSearchText] = useState<string>("");
+  const [selectedFilters, setSelectedFilters] = useState<ActivityCategory[]>([]);
 
-  const handleSearch = () => {
-    // 🟢 ถ้าไม่เลือกอะไรเลย = แสดงทั้งหมด
-    const activeFilters = selectedFilters.length > 0 ? selectedFilters : ["ทั้งหมด"];
+  // เก็บ Set ของหมวดเพื่อเช็ค “รู้จัก/ไม่รู้จัก” เร็วขึ้น และไม่ recreate
+  const knownCategories = useMemo(() => new Set<ActivityCategory>(FILTER_OPTIONS), []);
 
-    const filtered = activities.filter((act) => {
-      const matchText = act.altText.toLowerCase().includes(searchText.toLowerCase());
+  // โหลดข้อมูลแบบยกเลิกได้เมื่อ unmount (axios v1 รองรับ signal)
+  useEffect(() => {
+    const controller = new AbortController();
 
-      let matchFilter = false;
-      if (activeFilters.includes("ทั้งหมด")) {
-        matchFilter = true;
-      } else if (activeFilters.includes("อื่นๆ")) {
-        matchFilter = !filterOptions.some(
-          (f) => f !== "ทั้งหมด" && f !== "อื่นๆ" && act.category === f
+    (async () => {
+      try {
+        setLoading(true);
+        const { data } = await axios.get<ActivityThumbnailResponse[]>(
+          apiRoutes.getAllActivitiesThumbnails,
+          { withCredentials: true, timeout: 10000, signal: controller.signal }
         );
-      } else {
-        matchFilter = activeFilters.includes(act.category);
+        setActivities(data);
+        setFilteredActivities(data); 
+      } catch (err: unknown) {
+        if (axios.isCancel(err)) return; 
+        const message = err instanceof Error ? err.message : "โหลดข้อมูลล้มเหลว";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    return () => controller.abort();
+  }, []);
+
+  const handleFilterChange = useCallback((value: ActivityCategory) => {
+    setSelectedFilters((prev) =>
+      prev.includes(value) ? prev.filter((f) => f !== value) : [...prev, value]
+    );
+  }, []);
+
+  // กรองเมื่อกด Search 
+  const handleSearch = useCallback(() => {
+    const q = searchText.trim().toLowerCase();
+    const active = selectedFilters;
+
+    const next = activities.filter((a) => {
+      const title = (a.title ?? "").toLowerCase();
+      const matchText = q === "" ? true : title.includes(q);
+
+      // ไม่เลือก filter ใด ๆ => ดูแต่ข้อความ
+      if (active.length === 0) return matchText;
+
+      // ดึง category จากหลายคีย์
+      const maybe = a as unknown as MaybeCategory;
+      const cat =
+        normalizeCategory(maybe.category) ?? normalizeCategory(maybe.category_code);
+
+      // ถ้ามี Others: ให้ผ่านกรณี category ที่ไม่รู้จักด้วย
+      if (active.includes(ActivityCategory.Others)) {
+        const isKnown = cat ? knownCategories.has(cat) : false;
+        const matchFilter = (cat && active.includes(cat)) || !isKnown;
+        return matchText && matchFilter;
       }
 
-      return matchText && matchFilter;
+      return matchText && !!cat && active.includes(cat);
     });
 
-    setFilteredActivities(filtered);
-  };
+    setFilteredActivities(next);
+  }, [activities, knownCategories, searchText, selectedFilters]);
+
+  if (loading) {
+    return <p className="p-6 text-gray-600">กำลังโหลดกิจกรรม…</p>;
+  }
+  if (error) {
+    return <p className="p-6 text-red-600">เกิดข้อผิดพลาด: {error}</p>;
+  }
 
   return (
     <main className="min-h-screen w-full bg-[#f6f1e7] p-6 flex flex-col items-center">
-      <h1 className="mb-8 text-center text-2xl sm:text-3xl lg:text-4xl font-bold text-[#730217]">
+      <h1 className="mb-8 mt-5 text-center text-2xl sm:text-3xl lg:text-4xl font-bold text-[#730217]">
         กิจกรรมภายในคณะวิศวกรรมศาสตร์
       </h1>
 
@@ -84,16 +135,11 @@ export default function ActivityPage() {
 
         <section className="sm:col-span-3 space-y-6">
           {filteredActivities.length > 0 ? (
-            filteredActivities.map((item) => (
-              <ActivityBanner
-                key={item.id}
-                imageSrc={item.imageSrc}
-                altText={item.altText}
-                link={item.link}
-              />
+            filteredActivities.map((activity) => (
+              <ActivityList key={activity.id} activity={activity} />
             ))
           ) : (
-            <p className="text-gray-500 text-center">
+            <p className="text-gray-500 flex items-center justify-center text-3xl">
               ไม่พบกิจกรรมที่ตรงกับการค้นหา
             </p>
           )}

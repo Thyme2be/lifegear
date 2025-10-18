@@ -17,6 +17,8 @@ Backend is not now connect with all front end page. We're still working on.
 
 2. Auth cookie only last for 30 minutes.
 
+3. Supabase Free plan projects are paused after 1 week of inactivity. Database owner will have to restore it every time the database paused. 
+
 # Bug and Fix Report
 1. Can not register new user from back end to supabase database
 `error: new row violates row-level security policy for table "students"`

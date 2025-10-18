@@ -6,6 +6,7 @@ import React, { FormEvent, useState } from "react";
 import { toast, ToastContainer, Bounce } from "react-toastify";
 import TermsModal from "./TermsModal";
 import "react-toastify/dist/ReactToastify.css";
+import { apiRoutes } from "@/lib/apiRoutes";
 
 const LoginBox = () => {
   const router = useRouter();
@@ -20,7 +21,7 @@ const LoginBox = () => {
       formData.append("username", studentId);
       formData.append("password", password);
 
-      await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/api/auth/login`, formData, {
+      await axios.post(apiRoutes.postLogin, formData, {
         withCredentials: true,
       });
 

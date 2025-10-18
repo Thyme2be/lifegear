@@ -1,18 +1,18 @@
 import React from "react";
 import Image from "next/image";
+import { ActivityThumbnailResponse } from "@/lib/types";
 
 interface ActivityListProps {
-  imageSrc: string;
-  altText: string;
-  link: string;
+  activity: ActivityThumbnailResponse;
 }
 
+export default function ActivityList({ activity }: ActivityListProps) {
+  // Fallback text if no title/alt available
+  const altText = `Activity ${activity.id} - ${activity.category}`;
+  // Example: link could go to `/activities/[id]`
+  const link = `/activities/${activity.id}`;
+  const imageSrc = activity.image_path ?? "/fallback_activity.png"; // fallback image
 
-export default function ActivityList({
-  imageSrc,
-  altText,
-  link,
-}: ActivityListProps) {
   return (
     <div className="flex flex-col items-start">
       <Image
