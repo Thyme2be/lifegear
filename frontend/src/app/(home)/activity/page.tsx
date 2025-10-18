@@ -1,86 +1,118 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import ActivityList from "@/components/ActivityList";
 import axios from "axios";
+import ActivityList from "@/components/ActivityList";
 import { ActivityThumbnailResponse } from "@/lib/types";
 import SearchBox from "@/components/SearchBox";
 import { ActivityCategory } from "@/lib/enums/activity";
 import { apiRoutes } from "@/lib/apiRoutes";
 
-const filterOptions = [
-  "ทั้งหมด", // "All" option
-  ...Object.values(ActivityCategory),
-];
+// ให้ TypeScript มั่นใจว่าเป็น ActivityCategory[]
+const filterOptions = Object.values(ActivityCategory) as ActivityCategory[];
+
+// อ่านค่า category ที่อาจมาจากหลายคีย์/หลายรูปแบบ แล้วแปลงเป็น enum
+function normalizeCategory(input: unknown): ActivityCategory | null {
+  if (typeof input !== "string") return null;
+  const val = input.toLowerCase();
+
+  // รองรับทั้งเอกพจน์/พหูพจน์ และตรงกับ enum อยู่แล้ว
+  const map: Record<string, ActivityCategory> = {
+    academic: ActivityCategory.Academics,
+    academics: ActivityCategory.Academics,
+    recreation: ActivityCategory.Recreations,
+    recreations: ActivityCategory.Recreations,
+    social: ActivityCategory.Socials,
+    socials: ActivityCategory.Socials,
+    other: ActivityCategory.Others,
+    others: ActivityCategory.Others,
+  };
+
+  if (val in map) return map[val];
+
+  // กรณี backend ส่งค่าที่ตรง enum อยู่แล้ว
+  if ((Object.values(ActivityCategory) as string[]).includes(val)) {
+    return val as ActivityCategory;
+  }
+  return null;
+}
+
+// บอกว่า object นี้ “อาจ” มีคีย์ category/category_code ก็ได้
+type MaybeCategory = {
+  category?: unknown;
+  category_code?: unknown;
+};
 
 export default function ActivityPage() {
   const [activities, setActivities] = useState<ActivityThumbnailResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filteredActivities, setFilteredActivities] = useState<
-    ActivityThumbnailResponse[]
-  >([]);
+  const [filteredActivities, setFilteredActivities] = useState<ActivityThumbnailResponse[]>([]);
   const [searchText, setSearchText] = useState("");
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]); // start empty
+  const [selectedFilters, setSelectedFilters] = useState<ActivityCategory[]>([]);
 
   useEffect(() => {
-    setLoading(true);
-    axios
-      .get<ActivityThumbnailResponse[]>(apiRoutes.getAllActivitiesThumbnails, {
-        withCredentials: true,
-      })
-      .then((response) => {
-        setActivities(response.data);
-        setFilteredActivities(response.data); // initialize filteredActivities
+    const load = async () => {
+      try {
+        setLoading(true);
+        const { data } = await axios.get<ActivityThumbnailResponse[]>(
+          apiRoutes.getAllActivitiesThumbnails,
+          { withCredentials: true, timeout: 10000 }
+        );
+        setActivities(data);
+        setFilteredActivities(data);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "โหลดข้อมูลล้มเหลว";
+        setError(message);
+      } finally {
         setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
+      }
+    };
+    load();
   }, []);
 
-  const handleFilterChange = (label: string) => {
-    setSelectedFilters(
-      (prev) =>
-        prev.includes(label)
-          ? prev.filter((f) => f !== label) // remove if already selected
-          : [...prev, label] // add if new
+  const handleFilterChange = (value: ActivityCategory) => {
+    setSelectedFilters((prev) =>
+      prev.includes(value) ? prev.filter((f) => f !== value) : [...prev, value]
     );
   };
 
+  // ✅ กรองบน client ให้รองรับ category หลายชื่อคีย์
   const handleSearch = () => {
-    const activeFilters =
-      selectedFilters.length > 0 ? selectedFilters : ["ทั้งหมด"];
+    const q = searchText.trim().toLowerCase();
+    const active = selectedFilters;
 
-    const filtered = activities.filter((activity) => {
-      const matchText = activity.title
-        ?.toLowerCase()
-        .includes(searchText.toLowerCase());
+    const filtered = activities.filter((a) => {
+      const title = (a.title ?? "").toLowerCase();
+      const matchText = q === "" ? true : title.includes(q);
 
-      let matchFilter = false;
-      if (activeFilters.includes("ทั้งหมด")) {
-        matchFilter = true;
-      } else if (activeFilters.includes("other")) {
-        matchFilter = !filterOptions.some(
-          (f) => f !== "ทั้งหมด" && f !== "other" && activity.category === f
-        );
-      } else {
-        matchFilter = activeFilters.includes(activity.category);
+      if (active.length === 0) return matchText;
+
+      // อ่านค่า category จาก a (ซึ่งอาจจะไม่มีคีย์ก็ได้)
+      const maybe = a as unknown as MaybeCategory;
+      const cat =
+        normalizeCategory(maybe.category) ??
+        normalizeCategory(maybe.category_code);
+
+      if (active.includes(ActivityCategory.Others)) {
+        const known = new Set<ActivityCategory>(filterOptions);
+        const isKnown = cat ? known.has(cat) : false;
+        const matchFilter = (cat && active.includes(cat)) || !isKnown;
+        return matchText && matchFilter;
       }
 
-      return matchText && matchFilter;
+      return matchText && !!cat && active.includes(cat);
     });
 
     setFilteredActivities(filtered);
   };
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
+  if (loading) return <p className="p-6 text-gray-600">กำลังโหลดกิจกรรม…</p>;
+  if (error) return <p className="p-6 text-red-600">เกิดข้อผิดพลาด: {error}</p>;
 
   return (
     <main className="min-h-screen w-full bg-[#f6f1e7] p-6 flex flex-col items-center">
-      <h1 className="mb-8 text-center text-2xl sm:text-3xl lg:text-4xl font-bold text-[#730217]">
+      <h1 className="mb-8 mt-5 text-center text-2xl sm:text-3xl lg:text-4xl font-bold text-[#730217]">
         กิจกรรมภายในคณะวิศวกรรมศาสตร์
       </h1>
 
@@ -99,7 +131,7 @@ export default function ActivityPage() {
               <ActivityList key={activity.id} activity={activity} />
             ))
           ) : (
-            <p className="text-gray-500 text-center">
+            <p className="text-gray-500 flex items-center justify-center text-3xl">
               ไม่พบกิจกรรมที่ตรงกับการค้นหา
             </p>
           )}
