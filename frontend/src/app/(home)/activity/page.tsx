@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import ActivityList from "@/components/ActivityList";
 import { ActivityThumbnailResponse } from "@/lib/types";
@@ -8,36 +8,31 @@ import SearchBox from "@/components/SearchBox";
 import { ActivityCategory } from "@/lib/enums/activity";
 import { apiRoutes } from "@/lib/apiRoutes";
 
-// ให้ TypeScript มั่นใจว่าเป็น ActivityCategory[]
-const filterOptions = Object.values(ActivityCategory) as ActivityCategory[];
+const FILTER_OPTIONS = Object.values(ActivityCategory) as ActivityCategory[];
 
-// อ่านค่า category ที่อาจมาจากหลายคีย์/หลายรูปแบบ แล้วแปลงเป็น enum
+const NORMALIZE_MAP: Record<string, ActivityCategory> = {
+  academic: ActivityCategory.Academics,
+  academics: ActivityCategory.Academics,
+  recreation: ActivityCategory.Recreations,
+  recreations: ActivityCategory.Recreations,
+  social: ActivityCategory.Socials,
+  socials: ActivityCategory.Socials,
+  other: ActivityCategory.Others,
+  others: ActivityCategory.Others,
+};
+
 function normalizeCategory(input: unknown): ActivityCategory | null {
   if (typeof input !== "string") return null;
   const val = input.toLowerCase();
 
-  // รองรับทั้งเอกพจน์/พหูพจน์ และตรงกับ enum อยู่แล้ว
-  const map: Record<string, ActivityCategory> = {
-    academic: ActivityCategory.Academics,
-    academics: ActivityCategory.Academics,
-    recreation: ActivityCategory.Recreations,
-    recreations: ActivityCategory.Recreations,
-    social: ActivityCategory.Socials,
-    socials: ActivityCategory.Socials,
-    other: ActivityCategory.Others,
-    others: ActivityCategory.Others,
-  };
+  if (val in NORMALIZE_MAP) return NORMALIZE_MAP[val];
 
-  if (val in map) return map[val];
-
-  // กรณี backend ส่งค่าที่ตรง enum อยู่แล้ว
   if ((Object.values(ActivityCategory) as string[]).includes(val)) {
     return val as ActivityCategory;
   }
   return null;
 }
 
-// บอกว่า object นี้ “อาจ” มีคีย์ category/category_code ก็ได้
 type MaybeCategory = {
   category?: unknown;
   category_code?: unknown;
@@ -45,58 +40,67 @@ type MaybeCategory = {
 
 export default function ActivityPage() {
   const [activities, setActivities] = useState<ActivityThumbnailResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [filteredActivities, setFilteredActivities] = useState<ActivityThumbnailResponse[]>([]);
-  const [searchText, setSearchText] = useState("");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [searchText, setSearchText] = useState<string>("");
   const [selectedFilters, setSelectedFilters] = useState<ActivityCategory[]>([]);
 
+  // เก็บ Set ของหมวดเพื่อเช็ค “รู้จัก/ไม่รู้จัก” เร็วขึ้น และไม่ recreate
+  const knownCategories = useMemo(() => new Set<ActivityCategory>(FILTER_OPTIONS), []);
+
+  // โหลดข้อมูลแบบยกเลิกได้เมื่อ unmount (axios v1 รองรับ signal)
   useEffect(() => {
-    const load = async () => {
+    const controller = new AbortController();
+
+    (async () => {
       try {
         setLoading(true);
         const { data } = await axios.get<ActivityThumbnailResponse[]>(
           apiRoutes.getAllActivitiesThumbnails,
-          { withCredentials: true, timeout: 10000 }
+          { withCredentials: true, timeout: 10000, signal: controller.signal }
         );
         setActivities(data);
-        setFilteredActivities(data);
+        setFilteredActivities(data); 
       } catch (err: unknown) {
+        if (axios.isCancel(err)) return; 
         const message = err instanceof Error ? err.message : "โหลดข้อมูลล้มเหลว";
         setError(message);
       } finally {
         setLoading(false);
       }
-    };
-    load();
+    })();
+
+    return () => controller.abort();
   }, []);
 
-  const handleFilterChange = (value: ActivityCategory) => {
+  const handleFilterChange = useCallback((value: ActivityCategory) => {
     setSelectedFilters((prev) =>
       prev.includes(value) ? prev.filter((f) => f !== value) : [...prev, value]
     );
-  };
+  }, []);
 
-  // ✅ กรองบน client ให้รองรับ category หลายชื่อคีย์
-  const handleSearch = () => {
+  // กรองเมื่อกด Search 
+  const handleSearch = useCallback(() => {
     const q = searchText.trim().toLowerCase();
     const active = selectedFilters;
 
-    const filtered = activities.filter((a) => {
+    const next = activities.filter((a) => {
       const title = (a.title ?? "").toLowerCase();
       const matchText = q === "" ? true : title.includes(q);
 
+      // ไม่เลือก filter ใด ๆ => ดูแต่ข้อความ
       if (active.length === 0) return matchText;
 
-      // อ่านค่า category จาก a (ซึ่งอาจจะไม่มีคีย์ก็ได้)
+      // ดึง category จากหลายคีย์
       const maybe = a as unknown as MaybeCategory;
       const cat =
-        normalizeCategory(maybe.category) ??
-        normalizeCategory(maybe.category_code);
+        normalizeCategory(maybe.category) ?? normalizeCategory(maybe.category_code);
 
+      // ถ้ามี Others: ให้ผ่านกรณี category ที่ไม่รู้จักด้วย
       if (active.includes(ActivityCategory.Others)) {
-        const known = new Set<ActivityCategory>(filterOptions);
-        const isKnown = cat ? known.has(cat) : false;
+        const isKnown = cat ? knownCategories.has(cat) : false;
         const matchFilter = (cat && active.includes(cat)) || !isKnown;
         return matchText && matchFilter;
       }
@@ -104,11 +108,15 @@ export default function ActivityPage() {
       return matchText && !!cat && active.includes(cat);
     });
 
-    setFilteredActivities(filtered);
-  };
+    setFilteredActivities(next);
+  }, [activities, knownCategories, searchText, selectedFilters]);
 
-  if (loading) return <p className="p-6 text-gray-600">กำลังโหลดกิจกรรม…</p>;
-  if (error) return <p className="p-6 text-red-600">เกิดข้อผิดพลาด: {error}</p>;
+  if (loading) {
+    return <p className="p-6 text-gray-600">กำลังโหลดกิจกรรม…</p>;
+  }
+  if (error) {
+    return <p className="p-6 text-red-600">เกิดข้อผิดพลาด: {error}</p>;
+  }
 
   return (
     <main className="min-h-screen w-full bg-[#f6f1e7] p-6 flex flex-col items-center">
