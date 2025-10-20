@@ -10,3 +10,10 @@ class User(BaseModel):
     first_name_th: str | None = None
     last_name_th: str | None = None
     is_active: bool | None = None
+
+
+class UserRegister(BaseModel):
+    username: str
+    password: str
+    first_name_th: str | None = None
+    last_name_th: str | None = None

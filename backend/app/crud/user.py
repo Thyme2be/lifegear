@@ -1,4 +1,5 @@
 from db import supabase
+from schemas.auth import UserRegister
 
 
 def get_user(username: str):
@@ -10,9 +11,15 @@ def get_user(username: str):
     )
 
 
-def create_user(username: str, hashed_password: str):
-    return (
-        supabase.table("users")
-        .insert({"username": username, "password": hashed_password})
-        .execute()
-    )
+def create_user(user: UserRegister):
+
+    response = supabase.table("users").insert({
+            "username": user.username,
+            "password": user.password,
+            "first_name_th": user.first_name_th,
+            "last_name_th": user.last_name_th,
+            "is_active": True
+    }).execute()
+
+    return response.data  # returns the inserted row(s)
+
