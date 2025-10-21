@@ -17,4 +17,8 @@ export const apiRoutes = {
   // You can add other resource routes here
   // e.g., users, products, etc.
   getAllUsers: `${BASE_URL}/api/${API_VERSION}/users/`,
+  
+  // base สำหรับดึงกิจกรรมรายตัว
+  getActivityById: `${BASE_URL}/api/${API_VERSION}/activities/`, // ใช้ร่วมกับ /${id}
 };
+
