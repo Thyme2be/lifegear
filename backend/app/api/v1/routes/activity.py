@@ -3,7 +3,7 @@ from api.v1.dependencies import get_activity_form
 from services.activity_service import check_activity_exist
 from crud.activity import (
     create_activity,
-    get_all_detailed_activities,
+    get_activity_by_id,
     get_all_thumbnail_activities,
     delete_activity,
     get_activity_dates,
@@ -26,26 +26,7 @@ from uuid import UUID
 from datetime import datetime, timezone
 import json
 
-
 activity_router = APIRouter()
-
-
-# Temp Debug
-# @activity_router.post("/debug", status_code=status.HTTP_200_OK)
-# async def debug_form_upload(title: str = Form(...), image_file: UploadFile = File(...)):
-#     """
-#     A simple endpoint to debug form and file uploads.
-#     """
-#     print("--- DEBUG ENDPOINT HIT ---")
-#     print(f"Title received: {title}")
-#     print(f"Image filename received: {image_file.filename}")
-#     print(f"Image content type: {image_file.content_type}")
-
-#     return {
-#         "message": "Debug endpoint received data successfully!",
-#         "received_title": title,
-#         "received_filename": image_file.filename,
-#     }
 
 
 @activity_router.post("/", status_code=status.HTTP_201_CREATED)
@@ -106,6 +87,18 @@ async def add_activity(
     }
 
 
+@activity_router.get("/activity/{activity_id}", response_model=ActivityResponse)
+def read_activity(
+    activity_id: UUID,
+    current_active_user: User = Depends(get_current_active_user),
+):
+    try:
+        activity = get_activity_by_id(activity_id)
+        return activity
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Endpoint for thumbnail-only activities
 @activity_router.get("/thumbnails", response_model=List[ActivityThumbnailResponse])
 def read_thumbnail_activities(
@@ -116,18 +109,6 @@ def read_thumbnail_activities(
         return activities
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# Endpoint for full detailed activities
-# @activity_router.get("/", response_model=List[ActivityResponse])
-# def read_detailed_activities(
-#     current_active_user: User = Depends(get_current_active_user),
-# ):
-#     try:
-#         activities = get_all_detailed_activities()
-#         return activities
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
 
 
 # Update Data

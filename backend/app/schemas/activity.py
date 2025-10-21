@@ -66,9 +66,9 @@ class ActivityResponse(BaseModel):
     start_at: datetime
     end_at: datetime
     location_text: Optional[str] = None
-    contact_info: Optional[Dict[ContactType, str]] = {}
+    contact_info: Optional[Dict[str, str]] = None
     image_path: Optional[str] = None
-    status: ActivityStatus
-    category: ActivityCategory
+    status: str
+    category: str
     created_at: datetime
     updated_at: datetime

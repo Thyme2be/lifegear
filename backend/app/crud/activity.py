@@ -54,14 +54,15 @@ async def create_activity(
     return new_id
 
 
-def get_all_detailed_activities() -> ActivityResponse:
+def get_activity_by_id(activity_id: str) -> ActivityResponse:
     """
     Retrieves all activities from the database, ordered by creation date.
     """
     response = (
         supabase.table("activities")
         .select("*")
-        .order("created_at", desc=True)
+        .eq("id", activity_id)
+        .single()  # ensures it returns one object, not a list
         .execute()
     )
     if not response.data:
