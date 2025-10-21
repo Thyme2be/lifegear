@@ -60,7 +60,7 @@ export default function HelpBannerSlider() {
     ],
   };
 
-  const banners = Array.from({ length: 7 }, (_, i) => `/HowToUse/${i + 1}.png`);
+  const banners = Array.from({ length: 7 }, (_, i) => `/${i + 1}.png`);
 
   return (
     <section className="w-full max-w-7xl mx-auto px-2 sm:px-4">
