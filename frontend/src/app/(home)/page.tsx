@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import BannerSliderWrapper from "@/components/BannerSliderWrapper";
 import Image from "next/image";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "LifeGear | Homepage",
@@ -32,7 +33,7 @@ export default function Home() {
           <h2 className="heading2 text-[#730217] text-center">
             กิจกรรมทั้งหมด
           </h2>
-          <a
+          <Link
             href="/activity"
             className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10"
           >
@@ -43,7 +44,7 @@ export default function Home() {
               height={370}
               className="object-contain mt-8"
             />
-          </a>
+          </Link>
         </div>
 
         {/* การ์ดรายเดือน */}
