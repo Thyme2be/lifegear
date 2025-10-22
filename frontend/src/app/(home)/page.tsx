@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import BannerSliderWrapper from "@/components/BannerSliderWrapper";
 import Image from "next/image";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "LifeGear | Homepage",
@@ -15,7 +16,7 @@ export default function Home() {
 
       {/* Welcome Section */}
       <section className="p-6 sm:p-10 my-10 text-center max-w-4xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#730217] mb-4 text-shadow-lg">
+        <h1 className="heading text-[#730217] text-center mb-4">
           ขอต้อนรับเข้าสู่เว็บไซต์ <span className="text-black">LifeGear</span>
         </h1>
         <p className="text-[#2E2E2E] leading-relaxed whitespace-pre-line mb-10 text-sm sm:text-base">
@@ -29,10 +30,10 @@ export default function Home() {
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
         {/* การ์ดกิจกรรม */}
         <div className="flex flex-col items-center text-center max-w-sm mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#730217] text-shadow-lg">
+          <h2 className="heading2 text-[#730217] text-center">
             กิจกรรมทั้งหมด
           </h2>
-          <a
+          <Link
             href="/activity"
             className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10"
           >
@@ -43,12 +44,12 @@ export default function Home() {
               height={370}
               className="object-contain mt-8"
             />
-          </a>
+          </Link>
         </div>
 
         {/* การ์ดรายเดือน */}
         <div className="flex flex-col items-center text-center max-w-sm mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#730217] text-shadow-lg">
+          <h2 className="heading2 text-[#730217] text-center">
             ตารางชีวิต
           </h2>
           <h3 className="text-lg sm:text-xl font-bold text-[#730217] mb-2 text-shadow-lg">
@@ -70,7 +71,7 @@ export default function Home() {
 
         {/* การ์ดรายวัน */}
         <div className="flex flex-col items-center text-center max-w-sm mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#730217] text-shadow-lg">
+          <h2 className="heading2 text-[#730217] text-center">
             ตารางชีวิต
           </h2>
           <h3 className="text-lg sm:text-xl font-bold text-[#730217] mb-2 text-shadow-lg">

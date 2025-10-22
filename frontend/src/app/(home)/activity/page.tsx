@@ -120,7 +120,7 @@ export default function ActivityPage() {
 
   return (
     <main className="min-h-screen w-full bg-[#f6f1e7] p-6 flex flex-col items-center">
-      <h1 className="mb-8 mt-5 text-center text-2xl sm:text-3xl lg:text-4xl font-bold text-[#730217]">
+      <h1 className="mb-8 mt-2 heading text-[#730217] text-center">
         กิจกรรมภายในคณะวิศวกรรมศาสตร์
       </h1>
 

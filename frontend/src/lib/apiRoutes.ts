@@ -18,3 +18,4 @@ export const apiRoutes = {
   // e.g., users, products, etc.
   getAllUsers: `${BASE_URL}/api/${API_VERSION}/users`,
 };
+

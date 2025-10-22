@@ -13,7 +13,7 @@
   }
 }
 
-ิbody {
+body {
   margin: 0;
   padding: 0;
 }
@@ -42,4 +42,12 @@ body {
 }
 .slick-dots li button:before {
   color: white;
+}
+
+.heading {
+  @apply text-2xl sm:text-3xl lg:text-4xl font-bold text-shadow-lg;
+}
+
+.heading2 {
+  @apply text-2xl sm:text-3xl font-bold text-shadow-lg;
 }
