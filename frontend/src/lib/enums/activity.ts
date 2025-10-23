@@ -18,3 +18,10 @@ export const CategoryLabels: Record<ActivityCategory, string> = {
   [ActivityCategory.Socials]: "ด้านสังคม",
   [ActivityCategory.Others]: "ด้านอื่นๆ",
 };
+
+export const StatusLabels: Record<ActivityStatus, string> = {
+  [ActivityStatus.Upcoming]: "กำลังจะจัดขึ้น",   
+  [ActivityStatus.Running]: "กำลังดำเนินการ",     
+  [ActivityStatus.Finished]: "สิ้นสุดแล้ว",          
+  [ActivityStatus.Cancelled]: "ยกเลิกการจัดกิจกรรม",
+};

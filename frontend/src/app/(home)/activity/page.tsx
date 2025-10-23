@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import ActivityList from "@/components/ActivityList";
-import { ActivityThumbnailResponse } from "@/lib/types";
+import { ActivityThumbnailResponse } from "@/lib/types/activity";
 import SearchBox from "@/components/SearchBox";
 import { ActivityCategory } from "@/lib/enums/activity";
 import { apiRoutes } from "@/lib/apiRoutes";
