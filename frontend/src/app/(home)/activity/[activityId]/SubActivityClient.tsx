@@ -46,7 +46,7 @@ export default function SubActivityClient({ activityId }: Props) {
   return (
     <main className="min-h-screen bg-[#F6F1E7] py-10 px-4">
       <section className="max-w-3xl mx-auto bg-white rounded-[28px] shadow-xl p-6 sm:p-10">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#730217] tracking-tight mb-6">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#730217] tracking-tight mb-6">
           กิจกรรม “{title}”
         </h1>
 
@@ -61,23 +61,22 @@ export default function SubActivityClient({ activityId }: Props) {
           />
         </div>
 
-        <p className="text-center text-[#5B1414] text-lg sm:text-xl leading-relaxed mb-8">
+        <p className="text-center text-[#730217] font-bold text-lg sm:text-xl leading-relaxed mb-8 max-w-md mx-auto px-1">
           “{mock.quote}”
         </p>
 
-        <div className="text-[#5B1414] space-y-3 mb-10">
-          <p><b className="font-semibold">วันที่จัดกิจกรรม:</b> {mock.dateText}</p>
-          <p><b className="font-semibold">เวลาที่จัดกิจกรรม:</b> {mock.timeText}</p>
-          <p><b className="font-semibold">สถานที่จัดกิจกรรม:</b> {mock.locationText}</p>
-          <p><b className="font-semibold">ติดต่อเพิ่มเติม:</b> {mock.contactText}</p>
-          <p className="text-xs text-gray-400 pt-2">รหัสกิจกรรม: {activityId}</p>
+        <div className="text-black text-lg space-y-3 mb-10">
+          <p><b className="font-bold">วันที่จัดกิจกรรม :</b> {mock.dateText}</p>
+          <p><b className="font-bold">เวลาที่จัดกิจกรรม :</b> {mock.timeText}</p>
+          <p><b className="font-bold">สถานที่จัดกิจกรรม :</b> {mock.locationText}</p>
+          <p><b className="font-bold">ติดต่อเพิ่มเติม :</b> {mock.contactText}</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <button className="px-6 py-3 rounded-full bg-[#B30000] hover:bg-[#880000] text-white font-bold shadow-md transition">
+        <div className="flex flex-col sm:flex-row justify-end gap-4">
+          <button className="px-6 py-3 rounded-full bg-[#B30000] hover:bg-[#880000] text-white font-bold shadow-md transition cursor-pointer">
             เพิ่มลงในตารางชีวิต
           </button>
-          <button className="px-6 py-3 rounded-full border-2 border-[#B30000] text-[#B30000] hover:bg-[#B30000] hover:text-white font-bold transition">
+          <button className="px-6 py-3 rounded-full bg-[#B30000] text-white hover:bg-[#880000] font-bold shadow-md transition cursor-pointer">
             รายละเอียดวิธีการสมัคร
           </button>
         </div>
