@@ -202,10 +202,10 @@ export default function SubActivityClient({ activityId }: Props) {
 
               {data?.contact_info != null && (
                 <div>
-                  <b className="font-bold">ติดต่อเพิ่มเติม :</b>
-                  <div className="mt-2">
+                  <b className="font-bold">รายละเอียดวิธีการสมัคร :</b>
+                  <span className="mt-2">
                     <ContactInfoView info={data.contact_info} />
-                  </div>
+                  </span>
                 </div>
               )}
             </div>
@@ -217,13 +217,6 @@ export default function SubActivityClient({ activityId }: Props) {
                 onClick={() => alert("เพิ่มลงในตารางชีวิต (ตัวอย่าง)")}
               >
                 เพิ่มลงในตารางชีวิต
-              </button>
-              <button
-                type="button"
-                className="px-6 py-3 rounded-full bg-[#B30000] text-white hover:bg-[#880000] font-bold shadow-md transition"
-                onClick={() => alert("รายละเอียดวิธีการสมัคร (ตัวอย่าง)")}
-              >
-                รายละเอียดวิธีการสมัคร
               </button>
             </div>
           </>
