@@ -1,104 +1,235 @@
 "use client";
-import { useState } from "react";
 
-// mock ข้อมูลกิจกรรม
-const eventList: { date: string; title: string }[] = [
-  { date: "2025-08-05", title: "แข่งกีฬา" },
-  { date: "2025-08-10", title: "งานดนตรี" },
-  { date: "2025-08-20", title: "ตลาดนัด" },
-  { date: "2025-09-01", title: "เปิดเทอม" },
-];
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import {
+  IoMdArrowDropleftCircle,
+  IoMdArrowDroprightCircle,
+} from "react-icons/io";
 
-// ฟังก์ชันสร้างปฏิทิน
-function generateCalendar(year: number, month: number) {
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const calendar: (number | null)[] = [];
-  const offset = (firstDay + 6) % 7;
-  for (let i = 0; i < offset; i++) calendar.push(null);
-  for (let day = 1; day <= daysInMonth; day++) calendar.push(day);
-  return calendar;
+import { generateCalendarGrid, THAI_MONTHS } from "@/lib/datetime";
+import { getActivitiesInMonth } from "@/lib/mock-activities";
+import {
+  readRemovedIds,
+  removeRemovedId,
+  clearRemovedIds,
+  REMOVED_IDS_KEY,
+} from "@/lib/removed-ids";
+
+import IconButton from "@/components/IconButton";
+import CalendarCard from "@/components/CalendarCard";
+import MonthEventList from "@/components/MonthEventList";
+import type { DayEvent } from "@/types/monthly";
+
+/* =============== Helpers =============== */
+function sameYmd(a: Date, y: number, m: number, d: number) {
+  return a.getFullYear() === y && a.getMonth() === m && a.getDate() === d;
 }
 
-export default function CalendarPage() {
-  const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
+function buildEventsByDay(
+  events: { id: string; title: string; startAt: string }[]
+) {
+  const map: Record<number, DayEvent[]> = {};
+  for (const ev of events) {
+    const d = new Date(ev.startAt);
+    const day = d.getDate();
+    (map[day] ??= []).push({ id: ev.id, title: ev.title });
+  }
+  return map;
+}
 
-  const monthNames = [
-    "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
-    "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
-  ];
+/* =============== Page =============== */
+export default function MonthlyPage() {
+  // today ที่ไม่เปลี่ยนทุก render
+  const todayRef = useRef(new Date());
 
-  const calendar = generateCalendar(year, month);
-
-  const changeMonth = (direction: number) => {
-    let newMonth = month + direction;
-    let newYear = year;
-    if (newMonth < 0) { newMonth = 11; newYear--; }
-    else if (newMonth > 11) { newMonth = 0; newYear++; }
-    setMonth(newMonth);
-    setYear(newYear);
-  };
-
-  const currentMonthEvents = eventList.filter((event) => {
-    const d = new Date(event.date);
-    return d.getFullYear() === year && d.getMonth() === month;
+  // ใช้ Date เดียวเป็น anchor ของเดือนที่กำลังดู (ชี้ที่วันที่ 1 เสมอเพื่อเลี่ยง edge case)
+  const [anchorDate, setAnchorDate] = useState<Date>(() => {
+    const t = todayRef.current;
+    return new Date(t.getFullYear(), t.getMonth(), 1);
   });
 
-  return (
-    <main className="min-h-screen w-full bg-gray-50 p-6 flex flex-col items-center">
-      {/* หัวข้อ + ปุ่มเลื่อนเดือน */}
-      <div className="flex items-center space-x-4 mb-6">
-        <button onClick={() => changeMonth(-1)} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300">⬅</button>
-        <h1 className="text-2xl sm:text-3xl font-bold">
-          ตารางประจำเดือน <span className="text-black">{monthNames[month]}</span> {year}
-        </h1>
-        <button onClick={() => changeMonth(1)} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300">➡</button>
-      </div>
+  // ดึงค่าปี/เดือนจาก anchorDate — ใช้ useMemo เพราะอ่านบ่อย
+  const { year, month } = useMemo(
+    () => ({
+      year: anchorDate.getFullYear(),
+      month: anchorDate.getMonth(),
+    }),
+    [anchorDate]
+  );
 
-      <div className="w-full max-w-6xl grid grid-cols-1 sm:grid-cols-4 gap-6">
-        {/* ปฏิทิน */}
-        <section className="sm:col-span-3 bg-white rounded-xl shadow border p-4">
-          <div className="grid grid-cols-7 text-center font-semibold border-b pb-2">
-            <div>จ</div><div>อ</div><div>พ</div><div>พฤ</div><div>ศ</div><div>ส</div><div>อา</div>
-          </div>
-          <div className="grid grid-cols-7 gap-2 mt-2 text-sm">
-            {calendar.map((day, i) => {
-              if (!day) return <div key={i} className="h-24 border rounded-lg"></div>;
-              const dayEvents = currentMonthEvents.filter((ev) => new Date(ev.date).getDate() === day);
-              return (
-                <div key={i} className={`h-24 border rounded-lg p-1 flex flex-col text-gray-700 ${
-                  day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
-                    ? "bg-blue-100 border-blue-500" : ""
-                }`}>
-                  <span className="text-xs font-bold">{day}</span>
-                  <div className="space-y-1 mt-1">
-                    {dayEvents.map((ev, idx) => (
-                      <span key={idx} className="block bg-blue-200 text-blue-700 text-[10px] px-1 rounded truncate">
-                        {ev.title}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+  // ถังลบ
+  const [removedIds, setRemovedIds] = useState<string[]>(() =>
+    readRemovedIds()
+  );
+  const [showBin, setShowBin] = useState(false);
+
+  // sync removedIds เมื่อแท็บอื่นเปลี่ยนค่า
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === REMOVED_IDS_KEY) setRemovedIds(readRemovedIds());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  // ตารางเดือน (เริ่มวันจันทร์)
+  const calendar = useMemo(
+    () => generateCalendarGrid(year, month, { weekStartsOn: 1 }),
+    [year, month]
+  );
+
+  // ดึงกิจกรรมของเดือนนี้ (อ้าง today เฉย ๆ เพื่อ mock “ปัจจุบัน”)
+  const allEvents = useMemo(
+    () => getActivitiesInMonth(year, month, todayRef.current),
+    [year, month]
+  );
+
+  // คัดออกกิจกรรมที่ถูกลบ
+  const events = useMemo(
+    () => allEvents.filter((e) => !removedIds.includes(e.id)),
+    [allEvents, removedIds]
+  );
+
+  // สำหรับถังรีไซเคิล
+  const removedEventsThisMonth = useMemo(
+    () => allEvents.filter((e) => removedIds.includes(e.id)),
+    [allEvents, removedIds]
+  );
+
+  // กลุ่มกิจกรรมตามวันที่ (คำนวณครั้งเดียวจาก events)
+  const eventsByDay = useMemo(() => buildEventsByDay(events), [events]);
+
+  // เปลี่ยนเดือนแบบ atomic ด้วย anchorDate เดียว
+  const changeMonth = useCallback((delta: number) => {
+    setAnchorDate(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1)
+    );
+  }, []);
+
+  // กู้คืน
+  const restoreAll = useCallback(() => {
+    clearRemovedIds();
+    setRemovedIds([]);
+  }, []);
+
+  const restoreOne = useCallback((id: string) => {
+    removeRemovedId(id);
+    setRemovedIds((prev) => prev.filter((x) => x !== id));
+  }, []);
+
+  // เช็ค “วันนี้” ด้วย todayRef (นิ่ง) + year/month/day ปัจจุบันของ grid
+  const isSameYmd = useCallback(
+    (day: number) => sameYmd(todayRef.current, year, month, day),
+    [year, month]
+  );
+
+  // handler ดูทั้งหมด
+  const handleShowMore = useCallback((day: number, list: DayEvent[]) => {
+    alert(
+      `กิจกรรมทั้งหมดของวันที่ ${day}\n\n${list
+        .map((e) => "• " + e.title)
+        .join("\n")}`
+    );
+  }, []);
+
+  // ป้ายเดือน/ปี พ.ศ.
+  const monthLabel = useMemo(
+    () => `${THAI_MONTHS[month]} ${year + 543}`,
+    [month, year]
+  );
+
+  return (
+    <main className="min-h-screen w-full bg-[#f6f1e7] p-4 sm:p-6">
+      {/* Header */}
+      <header className="max-w-6xl mx-auto mb-4 sm:mb-6 flex items-center justify-center gap-3 text-main">
+        <h1 className="normal-text">ตารางชีวิตในเดือน</h1>
+        <span className="inline-flex items-center gap-2 align-middle">
+          <IconButton ariaLabel="เดือนก่อนหน้า" onClick={() => changeMonth(-1)}>
+            <IoMdArrowDropleftCircle size={24} />
+          </IconButton>
+          <span className="heading">{monthLabel}</span>
+          <IconButton ariaLabel="เดือนถัดไป" onClick={() => changeMonth(1)}>
+            <IoMdArrowDroprightCircle size={24} />
+          </IconButton>
+        </span>
+      </header>
+
+      {/* Layout */}
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Calendar */}
+        <div className="lg:col-span-3">
+          <CalendarCard
+            calendar={calendar}
+            eventsByDay={eventsByDay}
+            isSameYmd={isSameYmd}
+            onShowMore={handleShowMore}
+          />
+        </div>
 
         {/* Sidebar */}
-        <aside className="sm:col-span-1 bg-white rounded-xl shadow border p-4 flex flex-col">
-          <h2 className="font-bold mb-4 text-center">
-            กิจกรรมในเดือน <span className="text-black">“{monthNames[month]}”</span>
+        <aside className="bg-white rounded-4xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-4 sm:p-6 flex flex-col">
+          <h2 className="text-lg sm:text-xl font-bold text-main text-center mb-3">
+            กิจกรรมในเดือน “{THAI_MONTHS[month]}”
           </h2>
-          <ul className="text-sm space-y-2 flex-1">
-            {currentMonthEvents.length > 0 ? currentMonthEvents.map((ev, idx) => (
-              <li key={idx}>{new Date(ev.date).getDate()}: {ev.title}</li>
-            )) : <li className="text-gray-400">ไม่มีข้อมูลกิจกรรม</li>}
-          </ul>
-          <button className="mt-4 w-full bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700 transition">
-            เพิ่มกิจกรรม
-          </button>
+
+          <MonthEventList eventsByDay={eventsByDay} />
+
+          <Link
+            href="/activity"
+            className="text-center mt-4 w-full py-2 rounded-full text-lg sm:text-xl font-extrabold font-serif-thai bg-[#F1D500] text-black hover:bg-[#e0c603] transition-colors cursor-pointer"
+          >
+            กิจกรรมทั้งหมด
+          </Link>
+
+          <div className="mt-4 border-t pt-3">
+            <button
+              type="button"
+              onClick={() => setShowBin((s) => !s)}
+              className="w-full text-xs px-3 py-2 rounded border hover:bg-gray-50"
+            >
+              {showBin
+                ? "ซ่อนรายการที่ถูกลบ"
+                : `แสดงรายการที่ถูกลบ (${removedEventsThisMonth.length})`}
+            </button>
+
+            {showBin && (
+              <div className="mt-2 space-y-2">
+                {removedEventsThisMonth.length === 0 ? (
+                  <p className="text-xs text-gray-500">
+                    ไม่มีรายการที่ถูกลบในเดือนนี้
+                  </p>
+                ) : (
+                  <>
+                    <ul className="space-y-1">
+                      {removedEventsThisMonth.map((ev) => (
+                        <li
+                          key={ev.id}
+                          className="flex items-center justify-between text-xs"
+                        >
+                          <span className="truncate mr-2">{ev.title}</span>
+                          <button
+                            type="button"
+                            onClick={() => restoreOne(ev.id)}
+                            className="px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700"
+                          >
+                            กู้คืน
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={restoreAll}
+                      className="mt-2 w-full text-xs px-3 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                    >
+                      กู้คืนทั้งหมด
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </aside>
       </div>
     </main>
