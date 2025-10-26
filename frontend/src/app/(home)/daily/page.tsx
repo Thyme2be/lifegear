@@ -120,7 +120,7 @@ export default function DailyPage() {
   return (
     <main className="bg-[#f6f1e7] flex flex-col items-center p-6">
       <header className="w-full flex flex-col items-end text-[#730217] mb-6">
-        <h1 className="text-2xl sm:text-3xl font-semibold">ตารางกิจกรรมประจำวัน</h1>
+        <h1 className="text-2xl sm:text-3xl font-semibold">ตารางชีวิตประจำวัน</h1>
         <p className="heading font-bold text-xl sm:text-2xl">
           <TimeLabel />
         </p>
@@ -183,7 +183,7 @@ export default function DailyPage() {
           {/* ===== ตารางล่าง: ยังไม่ลงทะเบียน ===== */}
           <div className="w-full mt-10">
             <div className="mb-2 grid grid-cols-[25%_25%_25%_25%] items-center">
-              <h2 className="font-bold text-xl sm:text-2xl text-black">กิจกรรมเร็ว ๆ นี้</h2>
+              <h2 className="font-bold text-xl sm:text-2xl text-black text-center">กิจกรรมเร็ว ๆ นี้</h2>
               <span className="font-bold text-xl sm:text-2xl text-black text-center">กำหนดการ</span>
               <span className="font-bold text-xl sm:text-2xl text-black text-center">ระยะเวลา</span>
               <span className="font-bold text-xl sm:text-2xl text-black text-center">ดำเนินการ</span>
@@ -219,12 +219,10 @@ export default function DailyPage() {
                         key={ev.id}
                         className={`${idx % 2 === 0 ? "bg-[#8BD8FF]" : "bg-[#8CBAFF]"} hover:brightness-105 transition`}
                       >
-                        <td className="p-3 border">
-                          <div className="flex justify-between items-center gap-3">
+                        <td className="p-3 border text-center">
                             <Link href={buildPath(ev)} className="hover:underline truncate">
                               {ev.title}
                             </Link>
-                          </div>
                         </td>
                         <td className="p-3 border text-center">
                           <time>{formatThaiDate(d)}</time>

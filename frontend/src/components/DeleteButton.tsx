@@ -22,10 +22,10 @@ export default function DeleteButton({
   activityId,
   onDelete,
   confirm = true,
-  confirmMessage = "ยืนยันการลบกิจกรรมนี้ออกจากตารางรายเดือน?",
+  confirmMessage = "ยืนยันการลบกิจกรรมนี้ออกจากตารางของคุณ?",
   size = "sm",
   loading,
-  label = "ลบกิจกรรมนี้ออกจากตารางรายเดือน",
+  label = "ลบกิจกรรมนี้ออกจากตารางของคุณ",
   className,
   disabled,
   ...rest
@@ -36,7 +36,7 @@ export default function DeleteButton({
     onDelete?.(activityId);
   };
 
-  const root = buttonClasses({ size, variant: "danger", iconOnly: true, className });
+  const root = buttonClasses({ size, variant: "danger", iconOnly: true, className: `cursor-pointer ${className ?? ""}`});
 
   return (
     <button

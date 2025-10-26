@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ActivityThumbnailResponse } from "@/lib/types/activity";
+import { ActivityThumbnailResponse } from "@/types/activity";
 
 interface ActivityListProps {
   activity: ActivityThumbnailResponse & { slug?: string };
