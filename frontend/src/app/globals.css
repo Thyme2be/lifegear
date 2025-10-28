@@ -9,7 +9,7 @@
 @theme {
   --color-main: #730217;
   --color-secondary: #2e2e2e;
-  --color-main-bg: #f6f1e7;
+  --color-primary: #f6f1e7;
 }
 
 @media (prefers-color-scheme: dark) {
