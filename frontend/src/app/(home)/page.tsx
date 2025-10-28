@@ -9,22 +9,22 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <main className="bg-[#f6f1e7]">
-      
+    <main className="bg-main-bg">
+
       {/* Hero Section with Slider */}
       <BannerSliderWrapper />
 
       {/* Welcome Section */}
-      <section className="p-6 sm:p-10 my-10 text-center max-w-4xl mx-auto">
-        <h1 className="heading text-[#730217] text-center mb-4">
+      <article className="p-6 sm:p-10 my-10 max-w-4xl mx-auto text-center ">
+        <h1 className="heading mb-4 text-center text-main">
           ขอต้อนรับเข้าสู่เว็บไซต์ <span className="text-black">LifeGear</span>
         </h1>
-        <p className="text-[#2E2E2E] leading-relaxed whitespace-pre-line mb-10 text-sm sm:text-base">
+        <p className="mb-10 leading-relaxed whitespace-pre-line text-sm text-secondary sm:text-base">
           &quot;...หมดปัญหาสับสนเรื่องตารางเรียนหรือกิจกรรมคณะ! LifeGear ช่วยจัดระเบียบชีวิตนักศึกษาวิศวะให้ลงตัว <br />
           ด้วยระบบปฏิทินรายเดือนที่รวมทุกอย่างไว้ครบ ทั้งตารางเรียน กิจกรรม และการเพิ่มกิจกรรมส่วนตัว ใช้งานสะดวก <br />
           ครบจบในเว็บเดียว...&quot;
         </p>
-      </section>
+      </article>
 
       {/* Feature Section */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
@@ -35,6 +35,7 @@ export default function Home() {
           subTitle="ดูรายละเอียด"
           link="/activity"
           imgSrc="/activity.png"
+          alt="Activity card"
         />
 
         {/* การ์ดรายเดือน */}
@@ -43,6 +44,7 @@ export default function Home() {
           subTitle="รายเดือน"
           link="/monthly"
           imgSrc="/mothly.png"
+          alt="Monthly card"
         />
 
         {/* การ์ดรายวัน */}
@@ -51,6 +53,7 @@ export default function Home() {
           subTitle="รายวัน"
           link="/daily"
           imgSrc="/daily.png"
+          alt="Daily card"
         />
       </section>
     </main>
