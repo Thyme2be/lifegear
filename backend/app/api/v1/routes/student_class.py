@@ -38,9 +38,9 @@ async def get_daily_student_classes(
             detail="Only students can access their daily schedule",
         )
 
-    classes_list = await get_daily_classes(current_user)
-
     today = date.today()
+
+    classes_list = await get_daily_classes(current_user, today)
 
     classes_list_as_dicts = [dict(record) for record in classes_list]
 
