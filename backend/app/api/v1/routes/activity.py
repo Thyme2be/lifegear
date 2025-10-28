@@ -193,3 +193,4 @@ def remove_activity(activity_id: UUID, current_user: User = Depends(get_current_
         return {"message": "Activity deleted successfully", "success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+

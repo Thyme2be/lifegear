@@ -54,11 +54,11 @@ async def get_current_user(request: Request):
         raise credentials_exception
 
     # Remove unneccessary data
-    user.data[0] = {
+    user_data_dict = {
         k: v for k, v in user.data[0].items() if k not in ["password", "created_at"]
     }  # Omit password and created_at
-    user_obj = SimpleNamespace(**user.data[0])  # make it object
-    return user_obj
+
+    return User(**user_data_dict)
 
 
 async def get_current_active_user(

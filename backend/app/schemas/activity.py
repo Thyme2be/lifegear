@@ -2,11 +2,12 @@ from pydantic import (
     BaseModel,
     Field,
     ValidationInfo,
+    conint,
     field_validator,
     model_validator,
 )
-from typing import Optional, Dict
-from datetime import datetime
+from typing import Annotated, List, Optional, Dict
+from datetime import date, datetime, time
 from uuid import UUID
 from .enums import ActivityStatus, ActivityCategory, ContactType
 
@@ -31,10 +32,10 @@ class ActivityCreate(BaseModel):
 
     @field_validator("end_at")
     @classmethod
-    def validate_activity_date(cls, v: datetime, info: ValidationInfo):
-        if "start_at" in info.data and v < info.data["start_at"]:
+    def validate_activity_date(cls, value: datetime, info: ValidationInfo):
+        if "start_at" in info.data and value < info.data["start_at"]:
             raise ValueError("end_at must be after start_at")
-        return v
+        return value
 
 
 class ActivityUpdateForm(BaseModel):
