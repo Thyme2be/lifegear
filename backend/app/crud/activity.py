@@ -1,13 +1,14 @@
 from uuid import uuid4
 from datetime import datetime, timezone
+from db.base import supabase
 
-from fastapi import HTTPException, UploadFile
+from fastapi import UploadFile
 from services.activity_service import (
     delete_activity_image,
     move_activity_image,
     upload_activity_image,
 )
-from db.base import supabase
+
 from schemas.activity import (
     ActivityCreate,
     ActivityResponse,

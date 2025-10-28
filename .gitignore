@@ -45,3 +45,4 @@ next-env.d.ts
 *__pycache__
 
 make_test_token.py
+start.sh
