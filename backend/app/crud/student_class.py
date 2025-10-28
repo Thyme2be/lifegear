@@ -1,5 +1,3 @@
-# crud/student_class.py
-from datetime import date
 from typing import List
 import uuid
 import asyncpg
@@ -10,7 +8,7 @@ from db.base import get_pool
 
 
 async def get_daily_classes(
-    current_user: User,
+    current_user: User, today
 ) -> List[asyncpg.Record]:
     """
     Fetches today's classes for the currently authenticated student,
@@ -21,7 +19,7 @@ async def get_daily_classes(
         raise HTTPException(status_code=500, detail="DB pool not initialized")
 
     # Get today's date and weekday
-    today = date.today()
+    today = today
 
     # Get the weekday as a number.
     # IMPORTANT: Assumes Python's convention: 0=Monday, 1=Tuesday, ..., 6=Sunday
