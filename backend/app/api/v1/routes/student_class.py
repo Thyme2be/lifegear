@@ -1,10 +1,50 @@
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from crud.student_class import cancel_student_class_crud, create_student_class_crud
+from crud.student_class import (
+    cancel_student_class_crud,
+    create_student_class_crud,
+    get_daily_classes,
+)
 from core.security import get_current_active_user
 from schemas.auth import User
-from schemas.student_class import ClassCancellationIn, StudentClassIn
+from schemas.student_class import (
+    ClassCancellationIn,
+    DailyClassResponse,
+    StudentClassIn,
+)
 
 student_class_router = APIRouter()
+
+
+@student_class_router.get(
+    "/daily",
+    response_model=DailyClassResponse,
+    summary="Get Today's Classes for Current Student",
+    description="Fetches the schedule for the currently authenticated student for today, excluding any cancelled classes.",
+)
+async def get_daily_student_classes(
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Retrieves the daily class schedule for the authenticated student.
+
+    - This endpoint is intended for users with the "student" role.
+    - It automatically filters out any classes that are cancelled for today.
+    """
+    # This endpoint is for students viewing their own schedule
+    if current_user.role != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can access their daily schedule",
+        )
+
+    classes_list = await get_daily_classes(current_user)
+
+    today = date.today()
+
+    classes_list_as_dicts = [dict(record) for record in classes_list]
+
+    return DailyClassResponse(date=today, classes=classes_list_as_dicts)
 
 
 @student_class_router.post("/")

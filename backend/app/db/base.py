@@ -1,3 +1,4 @@
+import asyncio
 import os
 import asyncpg
 from supabase import create_client, Client
@@ -28,11 +29,23 @@ async def init_db():
     if not database_url:
         raise RuntimeError("SUPABASE_DB_URL environment variable is not set")
 
-    pool = await asyncpg.create_pool(database_url, min_size=1, max_size=10)
+    pool = await asyncpg.create_pool(
+        database_url, min_size=1, max_size=10, statement_cache_size=0
+    )
 
 
 async def close_db():
+    """Closes the database connection pool gracefully with a timeout."""
     global pool
     if pool:
-        await pool.close()
-        pool = None
+        print("Attempting to close database pool...")
+        try:
+            await asyncio.wait_for(pool.close(), timeout=10.0)
+            print("Database pool closed successfully.")
+        except asyncio.TimeoutError:
+            print(
+                "Database pool close timed out (10s). "
+                "This indicates a connection leak (a connection was acquired but not released)."
+            )
+        finally:
+            pool = None

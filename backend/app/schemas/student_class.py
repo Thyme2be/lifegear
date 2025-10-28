@@ -2,7 +2,7 @@ from datetime import date, time
 from typing import List, Optional
 import uuid
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ClassMeetingIn(BaseModel):
@@ -34,3 +34,15 @@ class ClassCancellationIn(BaseModel):
     class_meeting_id: uuid.UUID
     cancellation_date: date
     reason: str | None = None
+
+
+class StudentClassDaily(BaseModel):
+    class_code: str
+    class_name: str
+    start_time: time
+    end_time: time
+
+
+class DailyClassResponse(BaseModel):
+    date: date
+    classes: List[StudentClassDaily]
