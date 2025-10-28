@@ -1,11 +1,84 @@
 # crud/student_class.py
-from typing import Dict
+from datetime import date
+from typing import List
 import uuid
 import asyncpg
 from fastapi import HTTPException, status
 from schemas.auth import User
 from schemas.student_class import ClassCancellationIn, StudentClassIn
 from db.base import get_pool
+
+
+async def get_daily_classes(
+    current_user: User,
+) -> List[asyncpg.Record]:
+    """
+    Fetches today's classes for the currently authenticated student,
+    excluding any cancelled classes.
+    """
+    pool = get_pool()
+    if not pool:
+        raise HTTPException(status_code=500, detail="DB pool not initialized")
+
+    # Get today's date and weekday
+    today = date.today()
+
+    # Get the weekday as a number.
+    # IMPORTANT: Assumes Python's convention: 0=Monday, 1=Tuesday, ..., 6=Sunday
+    today_weekday = today.weekday()
+
+    # Get the student's ID from the authenticated user
+    student_id = current_user.id
+
+    # This raw SQL query performs the complex join and filtering:
+    # 1. Joins student_classes (sc) with class_meetings (cm).
+    # 2. Filters by the provided student_id and today's weekday.
+    # 3. Filters to ensure the class is currently active (today is between start/end dates).
+    # 4. LEFT JOINs class_cancellations (cc) *only* for today's date.
+    # 5. The key logic: `WHERE cc.id IS NULL` excludes any class that
+    #    successfully found a cancellation entry.
+
+    sql_query = """
+        SELECT
+            sc.class_code,
+            sc.class_name,
+            cm.start_time,
+            cm.end_time
+        FROM
+            student_classes AS sc
+        JOIN
+            class_meetings AS cm ON sc.id = cm.student_class_id
+        LEFT JOIN
+            class_cancellations AS cc 
+                ON cm.id = cc.class_meeting_id 
+                AND cc.cancellation_date = $1  -- today's date
+        WHERE
+            sc.student_id = $2              -- this student
+            AND cm.weekday = $3               -- today's weekday
+            AND $1 BETWEEN sc.class_start_date AND sc.class_end_date -- class is active
+            AND cc.id IS NULL               -- AND is NOT cancelled
+        ORDER BY
+            cm.start_time;
+    """
+
+    async with pool.acquire() as conn:
+        try:
+            # .fetch() returns a list of asyncpg.Record objects
+            class_records = await conn.fetch(
+                sql_query,
+                today,
+                student_id,
+                today_weekday,
+            )
+            return class_records
+
+        except Exception as e:
+            # Handle potential database errors
+            print(f"Error fetching daily classes: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An error occurred while fetching daily classes.",
+            )
 
 
 async def create_student_class_crud(payload: StudentClassIn):
@@ -75,7 +148,7 @@ async def cancel_student_class_crud(payload: ClassCancellationIn, current_user: 
 
     async with pool.acquire() as conn:
         async with conn.transaction():
-            
+
             # 1. Get the owner_id of the class to authorize
             owner_record = await conn.fetchrow(
                 """
@@ -133,7 +206,7 @@ async def cancel_student_class_crud(payload: ClassCancellationIn, current_user: 
                     status_code=status.HTTP_409_CONFLICT,
                     detail="This class meeting is already cancelled for this date",
                 )
-                
+
             except asyncpg.exceptions.ForeignKeyViolationError:
                 # This could happen if the class_meeting_id is invalid
                 raise HTTPException(
