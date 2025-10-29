@@ -10,6 +10,8 @@
   --color-main: #730217;
   --color-secondary: #2e2e2e;
   --color-primary: #f6f1e7;
+  --color-bf-btn: #b30000;
+  --color-btn-hover: #880000;
 }
 
 @media (prefers-color-scheme: dark) {
