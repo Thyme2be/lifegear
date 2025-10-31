@@ -1,7 +1,13 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.v1.routes import auth_router, activity_router, student_class_router, student_activity_router
+from api.v1.routes import (
+    auth_router,
+    activity_router,
+    student_class_router,
+    student_activity_router,
+    calendar_router
+)
 from db.base import init_db, close_db
 
 
@@ -34,8 +40,12 @@ app.include_router(activity_router, prefix="/api/v1/activities", tags=["activiti
 app.include_router(
     student_class_router, prefix="/api/v1/student-classes", tags=["student_classes"]
 )
-app.include_router(student_activity_router, prefix="/api/v1/student-activities", tags=["student_activities"])
-
+app.include_router(
+    student_activity_router,
+    prefix="/api/v1/student-activities",
+    tags=["student_activities"],
+)
+app.include_router(calendar_router, prefix="/api/v1/calendar", tags=["calendar"])
 
 @app.get("/")
 def read_root():
