@@ -204,7 +204,6 @@ export default function DailyPage() {
               ) : (
                 myToday.map((ev, idx) => {
                   const d = parseYmd(ev.date);
-                  const bgColor = idx % 2 === 0 ? "bg-[#FFC26D]" : "bg-[#FF975E]"; // เพิ่มเพื่อให้ mobile ใช้ต่อได้ด้วย
                   return (
                     <tr
                       key={ev.id}

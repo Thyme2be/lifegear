@@ -7,9 +7,9 @@ import { apiRoutes } from "@/lib/apiRoutes";
 import AddToLifeButton from "@/components/AddToLifeButton";
 import ErrorBox from "@/components/ui/ErrorBox";
 import NotFoundPage from "@/components/ui/NotFoundPage";
-import { Activity } from "lucide-react";
 import ImageWithFallback from "@/components/ui/FallbackImage";
 import SubActivityLoading from "./SubActivityLoading";
+import { ContactInfo } from "@/lib/contact";
 
 const FALLBACK_IMG = "/fallback_activity.png";
 
@@ -23,7 +23,7 @@ type Activity = {
   start_at?: string | null; // ISO
   end_at?: string | null; // ISO
   location_text?: string | null;
-  contact_info?: any; // ให้ ContactInfoView จัดการภายใน
+  contact_info?: ContactInfo | null; // ให้ ContactInfoView จัดการภายใน
 };
 
 /* label/value บรรทัดข้อมูล */
