@@ -1,13 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;700&display=swap");
 @import "tailwindcss";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
+
 @theme {
   --color-main: #730217;
+  --color-secondary: #2e2e2e;
+  --color-primary: #f6f1e7;
+  --color-bf-btn: #b30000;
+  --color-btn-hover: #880000;
+  --color-cream: #FFFEF4;
 }
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -26,7 +33,7 @@ body {
 }
 
 .font-serif-thai {
-  font-family: 'Noto Serif Thai', serif;
+  font-family: "Noto Serif Thai", serif;
 }
 
 @layer utilities {
@@ -67,5 +74,5 @@ body {
 }
 
 .normal-text {
-  @apply text-xl sm:text-2xl font-semibold ;
+  @apply text-xl sm:text-2xl font-semibold;
 }

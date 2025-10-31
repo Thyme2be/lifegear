@@ -66,7 +66,7 @@ function SearchBoxBase({
           />
           <IoIosSearch
             aria-hidden="true"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-black text-xl pointer-events-none"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl pointer-events-none"
           />
         </div>
 
@@ -91,7 +91,7 @@ function SearchBoxBase({
                     type="checkbox"
                     checked={checked}
                     onChange={() => onFilterChange(category)}
-                    className="mr-2 h-4 w-4 rounded border-gray-300 focus:ring-2 focus:ring-gray-300"
+                    className="mr-2 h-4 w-4 rounded border-gray-300 focus:ring-2 focus:ring-gray-300 cursor-pointer"
                   />
                   <label htmlFor={id} className="cursor-pointer select-none">
                     {label}
@@ -106,7 +106,7 @@ function SearchBoxBase({
           type="submit"
           disabled={isLoading}
           className={clsx(
-            "w-full rounded-full py-2 font-bold shadow-md transition",
+            "w-full rounded-full py-2 font-bold shadow-md transition cursor-pointer",
             "bg-[#F1D500] text-black hover:bg-[#e0c603]",
             isLoading && "opacity-70 cursor-not-allowed"
           )}

@@ -35,3 +35,8 @@ export type ActivityDetailUI = Omit<ActivityDetailResponse, "start_at" | "end_at
   start_at?: string | null;
   end_at?: string | null;
 };
+
+export type MaybeCategory = {
+  category?: unknown;
+  category_code?: unknown;
+};

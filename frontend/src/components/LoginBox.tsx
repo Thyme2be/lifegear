@@ -7,11 +7,13 @@ import { toast, ToastContainer, Bounce } from "react-toastify";
 import TermsModal from "./TermsModal";
 import "react-toastify/dist/ReactToastify.css";
 import { apiRoutes } from "@/lib/apiRoutes";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const LoginBox = () => {
   const router = useRouter();
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -85,52 +87,64 @@ const LoginBox = () => {
           </div>
 
           {/* Password */}
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
             <label className="block text-base sm:text-lg text-black font-extrabold font-serif-thai text-shadow-lg/20">
               รหัสผ่าน
             </label>
-            <input
-              type="password"
-              required
-              placeholder="Tsexxxxx"
-              id="password"
-              value={password}
-              onInvalid={(e) =>
-                (e.target as HTMLInputElement).setCustomValidity(
-                  "กรุณาใส่รหัสผ่าน"
-                )
-              }
-              onInput={(e) =>
-                (e.target as HTMLInputElement).setCustomValidity("")
-              }
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full h-12 bg-transparent border border-white rounded-2xl px-3 outline-none
-                 text-black font-serif-thai p-4 font-semibold
-                shadow-[4px_4px_12px_rgba(107,114,128,0.3),-4px_-4px_12px_rgba(107,114,128,0.3)]"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                placeholder="Tsexxxxx"
+                id="password"
+                value={password}
+                onInvalid={(e) =>
+                  (e.target as HTMLInputElement).setCustomValidity("กรุณาใส่รหัสผ่าน")
+                }
+                onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full h-12 bg-transparent border border-white rounded-2xl pl-3 pr-12 outline-none
+                  text-black font-serif-thai p-4 font-semibold
+                  shadow-[4px_4px_12px_rgba(107,114,128,0.3),-4px_-4px_12px_rgba(107,114,128,0.3)]"
+              />
+
+              {/* Button Eye Toggle */}
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#B30000] transition"
+              >
+                {showPassword ? <FaEye size={20} /> : <FaEyeSlash size={20} />}
+              </button>
+            </div>
           </div>
 
           {/* Remember & Forgot */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm sm:text-base">
-            <label className="flex items-center text-black font-medium space-x-2 font-serif-thai">
-              <input
-                type="checkbox"
-                className="w-5 h-5 sm:w-7 sm:h-7 cursor-pointer"
-                required
-                onInvalid={(e) =>
-                  (e.target as HTMLInputElement).setCustomValidity(
-                    "กรุณายอมรับเงื่อนไขก่อนเข้าสู่ระบบ"
-                  )
-                }
-                onInput={(e) =>
-                  (e.target as HTMLInputElement).setCustomValidity("")
-                }
-              />
+            <div className="flex items-center text-black font-medium font-serif-thai">
+              {/* checkbox + label */}
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 sm:w-7 sm:h-7 cursor-pointer"
+                  required
+                  onInvalid={(e) =>
+                    (e.target as HTMLInputElement).setCustomValidity(
+                      "กรุณายอมรับเงื่อนไขก่อนเข้าสู่ระบบ"
+                    )
+                  }
+                  onInput={(e) =>
+                    (e.target as HTMLInputElement).setCustomValidity("")
+                  }
+                />
+                <span>อนุมัติเงื่อนไขบริการ</span>
+              </label>
+
+              {/* อ่านเพิ่มเติม */}
               <span>
-                อนุมัติเงื่อนไขบริการ
                 <TermsModal />
               </span>
-            </label>
+            </div>
           </div>
 
           {/* Login Button */}
