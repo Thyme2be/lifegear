@@ -24,7 +24,7 @@ export default function MonthEventList({
         .map(([day, list]) => (
           <li key={day}>
             <div className="flex items-baseline gap-2">
-              <span className="font-semibold text-[#730217]">{day}</span>
+              <span className="font-semibold text-main">{day}</span>
               <div className="flex-1" />
             </div>
             <div className="ml-4 mt-1 space-y-1">
@@ -32,7 +32,7 @@ export default function MonthEventList({
                 <Link
                   key={x.id}
                   href={`/activity/${x.id}`}
-                  className="text-black text-sm px-2 py-0.5 rounded-md w-fit inline-block hover:underline hover:text-[#730217] focus:outline-none focus:ring-2 focus:ring-[#730217]/40 cursor-pointer"
+                  className="text-black text-sm px-2 py-0.5 rounded-md w-fit inline-block hover:underline hover:text-main focus:outline-none focus:ring-2 focus:ring-main/40 cursor-pointer"
                   title={x.title}
                 >
                   • {x.title}
