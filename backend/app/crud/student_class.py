@@ -22,7 +22,7 @@ async def get_daily_classes(
     today = today
 
     # Get the weekday as a number.
-    # IMPORTANT: Assumes Python's convention: 0=Monday, 1=Tuesday, ..., 6=Sunday
+    # Assumes Python's convention: 0=Monday, 1=Tuesday, ..., 6=Sunday
     today_weekday = today.weekday()
 
     # Get the student's ID from the authenticated user
@@ -61,7 +61,6 @@ async def get_daily_classes(
 
     async with pool.acquire() as conn:
         try:
-            # .fetch() returns a list of asyncpg.Record objects
             class_records = await conn.fetch(
                 sql_query,
                 today,
@@ -71,7 +70,6 @@ async def get_daily_classes(
             return class_records
 
         except Exception as e:
-            # Handle potential database errors
             print(f"Error fetching daily classes: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

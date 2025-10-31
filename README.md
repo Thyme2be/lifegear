@@ -1,16 +1,7 @@
-# Update Logs:
-## Major Backend Update V.1: 
-Updated at: 12/09/2025
-1. Adjust backend to query and compatible with new database layout.
-2. Fix cookie and token bug.
-- Instead using server-side Next.js or middleware, use client side to authenticate.
-3. Authenticated user can now bypass login page and redirect to Home page.
-4. Change the api endpoints.
-- Add `/check` endpoint to authenticate user.
-- Add `/user/home` to get user data for Home page.
-- Add api prefix `/v1/api/auth` to make it scalable and categorized.
-
-Backend is not now connect with all front end page. We're still working on.
+# Prerequisites
+1. Front end use Next.js, TailwindCSS and DaisyUI
+2. Back end use Fastapi
+3. Database use Supabase PostgreSQL
 
 # Constraint:
 1. If no api request is made within a certain amount of time, the backend server will automatically shut down and enter idle mode.  Although it takes less than a minute, the server will immediately restart in response to the api request.
@@ -32,3 +23,18 @@ fix:
 - use `
 - use `CMD ["fastapi", "run", "--host", "0.0.0.0", "--port", "8000"]` to run in DockerFile
 - Also `EXPOSE 8000` port 
+
+# Dev Documentaion
+1. Assumes Python's convention: 0=Monday, 1=Tuesday, ..., 6=Sunday
+
+## Setup the project
+**Recommended: Run on WSL or Linux environment**
+1. Setup Backend:
+- `cd backend`
+- Create .venv then pip install requirements.txt
+- Start local server by using `fastapi dev` (**Internet Connection Needed**)
+2. Setup Frontend:
+- `cd frontend`
+- Install Node Version Manager (nvm)
+- Use `npm i` to install package
+- Start local server by using `npm run dev`
