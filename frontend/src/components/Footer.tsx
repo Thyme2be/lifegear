@@ -11,7 +11,7 @@ export default function Footer() {
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
         
         {/* Social Icons */}
-        <div className="flex gap-3">
+        <div className="flex gap-3  ">
           <Link
             href="https://www.facebook.com/ENGR.THAMMASAT"
             target="_blank"
@@ -19,7 +19,7 @@ export default function Footer() {
             aria-label="Facebook"
             className={base}
           >
-            <FaFacebook className="h-8 w-8 text-white" />
+            <FaFacebook className="h-8 w-8 text-white hover:scale-120 ease-in-out transition" />
           </Link>
           <Link
             href="https://line.me/R/ti/p/@797bwksv"
@@ -28,14 +28,14 @@ export default function Footer() {
             aria-label="LINE"
             className={base}
           >
-            <SiLine className="h-8 w-8 text-white" />
+            <SiLine className="h-8 w-8 text-white hover:scale-120 ease-in-out transition" />
           </Link>
           <Link
             href="mailto:lifegear.tu@gmail.com"
             aria-label="Email"
             className={base}
           >
-            <SiGmail className="h-8 w-8 text-white" />
+            <SiGmail className="h-8 w-8 text-white hover:scale-120 ease-in-out transition" />
           </Link>
         </div>
 

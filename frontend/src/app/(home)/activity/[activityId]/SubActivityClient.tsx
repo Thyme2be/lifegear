@@ -213,7 +213,7 @@ export default function SubActivityClient({ activityId }: Props) {
             <div className="flex flex-col sm:flex-row justify-end gap-4">
               <button
                 type="button"
-                className="px-6 py-3 rounded-full bg-[#B30000] hover:bg-[#880000] text-white font-bold shadow-md transition"
+                className="px-6 py-3 rounded-full bg-[#B30000] hover:bg-[#880000] text-white font-bold shadow-md transition cursor-pointer"
                 onClick={() => alert("เพิ่มลงในตารางชีวิต (ตัวอย่าง)")}
               >
                 เพิ่มลงในตารางชีวิต
