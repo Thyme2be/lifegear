@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import TimeLabel from "@/components/TimeLabel";
 import { useNow } from "@/hooks/useNow";
+import { IoChevronDown, IoChevronUp } from "react-icons/io5";
 import {
   toYmdLocal,
   sameDay,
@@ -38,6 +39,62 @@ type Row = {
 /** utils */
 const formatThaiDate = (d: Date) =>
   `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`;
+
+
+/** Mobile Accordion Item (เพิ่ม prop bgColor) */
+function AccordionItem({
+  ev,
+  onDelete,
+  bgColor, // เพิ่ม prop ใหม่
+}: {
+  ev: Row;
+  onDelete?: (id: string) => void;
+  bgColor?: string; // เพิ่ม prop ใหม่
+}) {
+  const [open, setOpen] = useState(false);
+  const d = parseYmd(ev.date);
+
+  return (
+    <div
+      className={`border rounded-md mb-3 overflow-hidden sm:hidden ${bgColor}`} //  ใช้ bgColor ที่ส่งเข้ามา
+    >
+      <button
+        className="w-full px-4 py-3 bg-opacity-80 flex justify-between items-center font-semibold"
+        onClick={() => setOpen(!open)}
+      >
+        <span className="truncate">{ev.title}</span>
+        <span className="text-xl text-gray-700">
+          {open ? <IoChevronUp /> : <IoChevronDown />}
+        </span>
+      </button>
+
+      {open && (
+        <div className="px-4 py-2 bg-white space-y-2">
+          <p>
+            <span className="font-semibold">วัน:</span> {formatThaiDate(d)}
+          </p>
+          <p>
+            <span className="font-semibold">เวลา:</span> {ev.time}
+          </p>
+          <div className="flex gap-2 mt-2">
+            <MoreInfoButton
+              href={ev.slug ? `/activity/${ev.slug}` : `/activity/${ev.id}`}
+              size="sm"
+              variant="primary"
+            />
+            {ev.isMine && onDelete && (
+              <DeleteButton
+                activityId={ev.id}
+                onDelete={() => onDelete(ev.id)}
+                size="sm"
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function DailyPage() {
   const now = useNow(1000);
@@ -118,25 +175,25 @@ export default function DailyPage() {
   }, []);
 
   return (
-    <main className="bg-[#f6f1e7] flex flex-col items-center p-6">
+    <main className="bg-[#f6f1e7] flex flex-col items-center p-6 min-h-screen">
       <header className="w-full flex flex-col items-end text-[#730217] mb-6">
         <h1 className="text-2xl sm:text-3xl font-semibold">ตารางชีวิตประจำวัน</h1>
-        <p className="heading font-bold text-xl sm:text-2xl">
+        <p className="font-bold text-xl sm:text-4xl">
           <TimeLabel />
         </p>
       </header>
 
       <div className="w-full max-w-5xl bg-black rounded-lg p-4">
         <section className="bg-white rounded-md p-6">
-          {/* ===== ตารางบน: ของฉัน (วันนี้) ===== */}
-          <div className="mb-2 grid grid-cols-[25%_25%_25%_25%] items-center">
+          {/* ===== Desktop Table: ของฉัน ===== */}
+          <div className="hidden sm:grid mb-2 grid-cols-[25%_25%_25%_25%] items-center">
             <h2 className="font-bold text-xl sm:text-2xl text-black text-center">กิจกรรมของฉัน</h2>
             <span className="font-bold text-xl sm:text-2xl text-black text-center">กำหนดการ</span>
             <span className="font-bold text-xl sm:text-2xl text-black text-center">ระยะเวลา</span>
             <span className="font-bold text-xl sm:text-2xl text-black text-center">ดำเนินการ</span>
           </div>
 
-          <table className="w-full text-sm table-fixed border-collapse overflow-hidden">
+          <table className="hidden sm:table w-full text-sm table-fixed border-collapse overflow-hidden">
             <tbody>
               {myToday.length === 0 ? (
                 <tr>
@@ -147,6 +204,7 @@ export default function DailyPage() {
               ) : (
                 myToday.map((ev, idx) => {
                   const d = parseYmd(ev.date);
+                  const bgColor = idx % 2 === 0 ? "bg-[#FFC26D]" : "bg-[#FF975E]"; // เพิ่มเพื่อให้ mobile ใช้ต่อได้ด้วย
                   return (
                     <tr
                       key={ev.id}
@@ -180,16 +238,36 @@ export default function DailyPage() {
             </tbody>
           </table>
 
-          {/* ===== ตารางล่าง: ยังไม่ลงทะเบียน ===== */}
+          {/* Mobile Accordion: ของฉัน */}
+          <div className="sm:hidden mt-4">
+            <h2 className="font-bold text-xl text-black mb-2">กิจกรรมของฉัน</h2>
+            {myToday.length === 0 ? (
+              <p className="text-gray-500 text-center">
+                ยังไม่มีกิจกรรมของฉันในวันนี้
+              </p>
+            ) : (
+              myToday.map((ev, idx) => (
+                <AccordionItem
+                  key={ev.id}
+                  ev={ev}
+                  onDelete={handleDeleteFromMonthlyAndDaily}
+                  bgColor={idx % 2 === 0 ? "bg-[#FFC26D]" : "bg-[#FF975E]"} // เพิ่มเพื่อให้สีเหมือน desktop
+                />
+              ))
+            )}
+          </div>
+
+          {/* ===== Desktop Table: กิจกรรมเร็ว ๆ นี้ ===== */}
           <div className="w-full mt-10">
-            <div className="mb-2 grid grid-cols-[25%_25%_25%_25%] items-center">
+            <div className="hidden sm:grid mb-2 grid-cols-[25%_25%_25%_25%] items-center">
               <h2 className="font-bold text-xl sm:text-2xl text-black text-center">กิจกรรมเร็ว ๆ นี้</h2>
               <span className="font-bold text-xl sm:text-2xl text-black text-center">กำหนดการ</span>
               <span className="font-bold text-xl sm:text-2xl text-black text-center">ระยะเวลา</span>
               <span className="font-bold text-xl sm:text-2xl text-black text-center">ดำเนินการ</span>
             </div>
 
-            <table className="w-full text-sm table-fixed border-collapse overflow-hidden">
+            {/* Desktop Table */}
+            <table className="hidden sm:table w-full text-sm table-fixed border-collapse overflow-hidden">
               <colgroup>
                 <col style={{ width: "25%" }} />
                 <col style={{ width: "25%" }} />
@@ -220,9 +298,9 @@ export default function DailyPage() {
                         className={`${idx % 2 === 0 ? "bg-[#8BD8FF]" : "bg-[#8CBAFF]"} hover:brightness-105 transition`}
                       >
                         <td className="p-3 border text-center">
-                            <Link href={buildPath(ev)} className="hover:underline truncate">
-                              {ev.title}
-                            </Link>
+                          <Link href={buildPath(ev)} className="hover:underline truncate">
+                            {ev.title}
+                          </Link>
                         </td>
                         <td className="p-3 border text-center">
                           <time>{formatThaiDate(d)}</time>
@@ -240,9 +318,28 @@ export default function DailyPage() {
                 )}
               </tbody>
             </table>
+
+            {/* Mobile : กิจกรรมเร็ว ๆ นี้ */}
+            <div className="sm:hidden mt-4">
+              <h2 className="font-bold text-xl text-black mb-2">กิจกรรมเร็ว ๆ นี้</h2>
+              {upcomingUnregistered.length === 0 ? (
+                <p className="text-gray-500 text-center">
+                  ยังไม่มีกิจกรรมที่ยังไม่ได้ลงทะเบียน
+                </p>
+              ) : (
+                upcomingUnregistered.map((ev, idx) => (
+                  <AccordionItem
+                    key={ev.id}
+                    ev={ev}
+                    bgColor={idx % 2 === 0 ? "bg-[#8BD8FF]" : "bg-[#8CBAFF]"} // 💙 ใช้สีฟ้าเหมือน desktop
+                  />
+                ))
+              )}
+            </div>
           </div>
         </section>
       </div>
+
     </main>
   );
 }
