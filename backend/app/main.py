@@ -1,13 +1,30 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.v1.routes import auth_router, activity_router
+from api.v1.routes import (
+    auth_router,
+    activity_router,
+    student_class_router,
+    student_activity_router,
+    calendar_router
+)
+from db.base import init_db, close_db
 
-app = FastAPI()
 
-origins = [
-    "http://localhost:3000", 
-    "https://lifegear.vercel.app"
-]
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # startup
+    await init_db()
+    try:
+        yield
+    finally:
+        # shutdown
+        await close_db()
+
+
+app = FastAPI(lifespan=lifespan)
+
+origins = ["http://localhost:3000", "https://lifegear.vercel.app"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,9 +34,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(activity_router, prefix="/api/v1/activities", tags=["activities"])
-
+app.include_router(
+    student_class_router, prefix="/api/v1/student-classes", tags=["student_classes"]
+)
+app.include_router(
+    student_activity_router,
+    prefix="/api/v1/student-activities",
+    tags=["student_activities"],
+)
+app.include_router(calendar_router, prefix="/api/v1/calendar", tags=["calendar"])
 
 @app.get("/")
 def read_root():

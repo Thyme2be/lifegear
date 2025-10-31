@@ -46,7 +46,11 @@ def login(
 
 
 @auth_router.post("/register")
-async def register_user(user: UserRegister):
+async def register_user(user: UserRegister, current_user: User = Depends(get_current_active_user)):
+    
+    if current_user.role not in ["officer", "admin"]:
+      return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    
     try:
         # Hash password before storing
         hashed_pw = get_hash_password(user.password)
