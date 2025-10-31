@@ -7,7 +7,7 @@
 }
 @theme {
   --color-main: #730217;
-  --color-cream: #F5E8CA;
+  --color-cream: #FFFEF4;
 }
 @media (prefers-color-scheme: dark) {
   :root {
