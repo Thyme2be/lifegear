@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;700&display=swap");
 @import "tailwindcss";
 
 :root {
@@ -7,6 +7,7 @@
 }
 @theme {
   --color-main: #730217;
+  --color-cream: #F5E8CA;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -26,7 +27,7 @@ body {
 }
 
 .font-serif-thai {
-  font-family: 'Noto Serif Thai', serif;
+  font-family: "Noto Serif Thai", serif;
 }
 
 @layer utilities {
@@ -67,5 +68,5 @@ body {
 }
 
 .normal-text {
-  @apply text-xl sm:text-2xl font-semibold ;
+  @apply text-xl sm:text-2xl font-semibold;
 }
