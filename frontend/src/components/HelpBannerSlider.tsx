@@ -77,7 +77,7 @@ export default function HelpBannerSlider() {
                 fill
                 priority={idx === 0}
                 sizes="100vw"
-                className="object-contain sm:object-cover"
+                className="object-contain"
               />
           </div>
         ))}

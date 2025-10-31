@@ -29,10 +29,11 @@ export default function Home() {
       {/* Feature Section */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
         {/* การ์ดกิจกรรม */}
-        <div className="flex flex-col items-center text-center max-w-sm mx-auto">
+        <div className="flex flex-col items-center text-center max-w-sm mx-auto ">
           <h2 className="heading2 text-[#730217] text-center">
             กิจกรรมทั้งหมด
           </h2>
+          <div className=" hover:scale-105 ease-in-out transition ">
           <Link
             href="/activity"
             className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10"
@@ -42,9 +43,11 @@ export default function Home() {
               alt="Activity Icon"
               width={420}
               height={370}
-              className="object-contain mt-8"
+              className="object-contain mt-8 "
             />
           </Link>
+          </div>
+          
         </div>
 
         {/* การ์ดรายเดือน */}
@@ -55,6 +58,7 @@ export default function Home() {
           <h3 className="text-lg sm:text-xl font-bold text-[#730217] mb-2 text-shadow-lg">
             (รายเดือน)
           </h3>
+          <div className=" hover:scale-105 ease-in-out transition ">
           <a
             href="/monthly"
             className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10"
@@ -67,6 +71,8 @@ export default function Home() {
               className="object-contain"
             />
           </a>
+          </div>
+         
         </div>
 
         {/* การ์ดรายวัน */}
@@ -77,6 +83,7 @@ export default function Home() {
           <h3 className="text-lg sm:text-xl font-bold text-[#730217] mb-2 text-shadow-lg">
             (รายวัน)
           </h3>
+          <div className=" hover:scale-105 ease-in-out transition mb-10 ">
           <a
             href="/daily"
             className="relative w-full h-full rounded-3xl overflow-hidden cursor-pointer mb-10"
@@ -89,6 +96,8 @@ export default function Home() {
               className="object-contain"
             />
           </a>
+          </div >
+          
         </div>
       </section>
     </main>
