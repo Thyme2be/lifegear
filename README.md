@@ -30,6 +30,7 @@ fix:
 ## Setup the project
 **Recommended: Run on WSL or Linux environment**
 1. Setup Backend:
+- Required Python version 3.12
 - `cd backend`
 - Create .venv then pip install requirements.txt
 - Start local server by using `fastapi dev` (**Internet Connection Needed**)
