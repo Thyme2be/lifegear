@@ -1,7 +1,7 @@
-from datetime import date, datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta
+from dateutil.relativedelta import relativedelta
 from typing import List
 from fastapi import HTTPException, status
-from schemas.auth import User
 from schemas.student_activity import StudentActivityResponse
 from db.base import supabase
 from uuid import UUID, uuid4
@@ -33,6 +33,35 @@ def get_daily_activity(user_id: UUID) -> List[StudentActivityResponse]:
         activity_data = item.get("activities")
         if activity_data:
             # Validate and create the response object
+            activities_list.append(StudentActivityResponse(**activity_data))
+    return activities_list
+
+
+def get_monthly_activities_crud(user_id: UUID) -> List[StudentActivityResponse]:
+
+    today_start = datetime.now(timezone.utc).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    month_start = today_start.replace(day=1)
+    next_month_start = month_start + relativedelta(months=1)
+    
+    response = (
+        supabase.table("student_activities")
+        .select("activities(title, start_at, end_at)")
+        .eq("student_id", str(user_id))
+        .lt("activities.start_at", next_month_start.isoformat())
+        .gt("activities.end_at", month_start.isoformat())
+        .order("start_at", desc=False, foreign_table="activities")
+        .execute()
+    )
+
+    if not response.data:
+        return []
+
+    activities_list = []
+    for item in response.data:
+        activity_data = item.get("activities")
+        if activity_data:
             activities_list.append(StudentActivityResponse(**activity_data))
     return activities_list
 
