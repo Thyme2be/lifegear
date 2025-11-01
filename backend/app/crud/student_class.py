@@ -77,6 +77,7 @@ async def get_daily_classes(
                 detail="An error occurred while fetching daily classes.",
             )
 
+
 async def get_monthly_classes(
     current_user: User, date_in_month: datetime.date
 ) -> List[asyncpg.Record]:
@@ -85,6 +86,7 @@ async def get_monthly_classes(
     currently authenticated student for the month of the provided date_in_month,
     excluding any cancelled classes.
     """
+    
     pool = get_pool()
     if not pool:
         raise HTTPException(status_code=500, detail="DB pool not initialized")
@@ -142,7 +144,8 @@ async def get_monthly_classes(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An error occurred while fetching monthly classes.",
             )
-            
+
+
 async def create_student_class_crud(payload: StudentClassIn):
 
     pool = get_pool()

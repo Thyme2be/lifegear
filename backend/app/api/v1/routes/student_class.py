@@ -4,6 +4,7 @@ from crud.student_class import (
     cancel_student_class_crud,
     create_student_class_crud,
     get_daily_classes,
+    get_monthly_classes,
 )
 from core.security import get_current_active_user
 from schemas.auth import User
@@ -45,6 +46,22 @@ async def get_daily_student_classes(
     classes_list_as_dicts = [dict(record) for record in classes_list]
 
     return DailyClassResponse(date=today, classes=classes_list_as_dicts)
+
+
+@student_class_router.get("/monthly")
+async def get_monthly_student_classes(current_user: User = Depends(get_current_active_user)):
+    try:
+        today = date.today()
+        monthly_schedule = await get_monthly_classes(current_user, today) 
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Unexpected error in get_monthly_schedule: {e}") 
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching monthly activities.",
+        )
+    return monthly_schedule
 
 
 @student_class_router.post("/")
