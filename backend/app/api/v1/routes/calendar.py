@@ -1,7 +1,7 @@
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from schemas.calendar import DailyScheduleResponse
+from schemas.calendar import DailyScheduleResponse, MonthlyScheduleResponse
 from crud.student_activity import get_daily_activity, get_monthly_activities_crud
 from crud.student_class import get_daily_classes, get_monthly_classes
 from core.security import get_current_active_user
@@ -44,7 +44,7 @@ async def get_daily_schedule(current_user: User = Depends(get_current_active_use
 
 
 @calendar_router.get("/monthly")
-async def get_monthly_schedule(current_user: User = Depends(get_current_active_user)):
+async def get_monthly_schedule(current_user: User = Depends(get_current_active_user)) -> MonthlyScheduleResponse:
     if current_user.role != "student":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -80,5 +80,7 @@ async def get_monthly_schedule(current_user: User = Depends(get_current_active_u
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error fetching monthly activities.",
         )
+        
+    classes_as_dicts = [dict(record) for record in monthly_classes]
 
-    return {"classes": monthly_classes, "activities": monthly_activities}
+    return {"classes": classes_as_dicts, "activities": monthly_activities}
