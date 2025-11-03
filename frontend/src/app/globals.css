@@ -8,10 +8,16 @@
   --background: #ffffff;
   --foreground: #171717;
 }
+
 @theme {
   --color-main: #730217;
+  --color-secondary: #2e2e2e;
+  --color-primary: #f6f1e7;
+  --color-bf-btn: #b30000;
+  --color-btn-hover: #880000;
   --color-cream: #FFFEF4;
 }
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;

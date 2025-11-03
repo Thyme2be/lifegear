@@ -23,7 +23,7 @@ type Activity = {
   start_at?: string | null; // ISO
   end_at?: string | null; // ISO
   location_text?: string | null;
-  contact_info?: any; // ให้ ContactInfoView จัดการภายใน
+  contact_info?: ContactInfo | null; // ให้ ContactInfoView จัดการภายใน
 };
 
 /* label/value บรรทัดข้อมูล */
