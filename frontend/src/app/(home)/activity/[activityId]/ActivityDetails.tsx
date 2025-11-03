@@ -5,11 +5,11 @@ import ContactInfoView from "@/components/contactInfo";
 import { formatDateThaiFromIso, formatTimeThaiFromIso } from "@/lib/datetime";
 import { apiRoutes } from "@/lib/apiRoutes";
 import AddToLifeButton from "@/components/AddToLifeButton";
-import ErrorBox from "@/components/ui/ErrorBox";
-import NotFoundPage from "@/components/ui/NotFoundPage";
+import SubActivityNotFoundPage from "@/components/ui/NotFoundPage";
 import { Activity } from "lucide-react";
 import ImageWithFallback from "@/components/ui/FallbackImage";
 import SubActivityLoading from "./SubActivityLoading";
+import ErrorFetchDisplay from "./errorFetchDisplay";
 
 const FALLBACK_IMG = "/fallback_activity.png";
 
@@ -130,7 +130,7 @@ export default function ActivityDetails({
   if (error) {
     return (
       <div className="py-12">
-        <ErrorBox message={error} onRetry={handleRetry} />
+        <ErrorFetchDisplay error={new Error(error)} reset={handleRetry}/>
       </div>
     );
   }
@@ -143,57 +143,57 @@ export default function ActivityDetails({
   if (!data) {
     return (
       <div className="py-12">
-        <NotFoundPage />
+        <SubActivityNotFoundPage />
       </div>
     );
   }
 
   // มีข้อมูลแล้ว
   return (
-    <section className="max-w-3xl mx-auto bg-white rounded-[28px] shadow-2xl p-6 sm:p-10 ">
-      <h1 className="text-2xl sm:text-3xl font-extrabold text-main tracking-tight mb-6">
-        กิจกรรม “{title}”
-      </h1>
+      <section className="max-w-3xl mx-auto bg-white rounded-[28px] shadow-2xl p-6 sm:p-10 ">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-main tracking-tight mb-6">
+          กิจกรรม “{title}”
+        </h1>
 
-      <div className="relative aspect-[16/9] w-full rounded-3xl overflow-hidden shadow-[0_12px_30px_rgba(0,0,0,0.15)] mb-8">
-        <ImageWithFallback
-          src={imgSrc || FALLBACK_IMG}
-          alt={title}
-          fill
-          sizes="(max-width: 768px) 100vw, 896px"
-          className="object-cover"
-          priority
-          placeholder="blur"
-          blurDataURL="data:image/svg+xml;base64,..."
-        />
-      </div>
+        <div className="relative aspect-[16/9] w-full rounded-3xl overflow-hidden shadow-[0_12px_30px_rgba(0,0,0,0.15)] mb-8">
+          <ImageWithFallback
+            src={imgSrc || FALLBACK_IMG}
+            alt={title}
+            fill
+            sizes="(max-width: 768px) 100vw, 896px"
+            className="object-cover"
+            priority
+            placeholder="blur"
+            blurDataURL="data:image/svg+xml;base64,..."
+          />
+        </div>
 
-      {data.description && (
-        <p className="text-center text-main font-bold text-lg sm:text-xl leading-relaxed mb-8 max-w-md mx-auto px-1">
-          “{data.description}”
-        </p>
-      )}
-
-      <div className="text-black text-lg space-y-3 mb-10">
-        <InfoRow label="วันที่จัดกิจกรรม">{dateText}</InfoRow>
-        <InfoRow label="เวลาที่จัดกิจกรรม">{timeText}</InfoRow>
-        <InfoRow label="สถานที่จัดกิจกรรม">
-          {data.location_text || "ไม่ระบุสถานที่"}
-        </InfoRow>
-
-        {data.contact_info && (
-          <div>
-            <b className="font-bold">รายละเอียดวิธีการสมัคร</b>
-            <span className="mt-2 block">
-              <ContactInfoView info={data.contact_info} />
-            </span>
-          </div>
+        {data.description && (
+          <p className="text-center text-main font-bold text-lg sm:text-xl leading-relaxed mb-8 max-w-md mx-auto px-1">
+            “{data.description}”
+          </p>
         )}
-      </div>
 
-      <div className="flex flex-col sm:flex-row justify-end gap-4">
-        <AddToLifeButton />
-      </div>
-    </section>
+        <div className="text-black text-lg space-y-3 mb-10">
+          <InfoRow label="วันที่จัดกิจกรรม">{dateText}</InfoRow>
+          <InfoRow label="เวลาที่จัดกิจกรรม">{timeText}</InfoRow>
+          <InfoRow label="สถานที่จัดกิจกรรม">
+            {data.location_text || "ไม่ระบุสถานที่"}
+          </InfoRow>
+
+          {data.contact_info && (
+            <div>
+              <b className="font-bold">รายละเอียดวิธีการสมัคร</b>
+              <span className="mt-2 block">
+                <ContactInfoView info={data.contact_info} />
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row justify-end gap-4">
+          <AddToLifeButton />
+        </div>
+      </section>
   );
 }

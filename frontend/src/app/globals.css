@@ -1,6 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;700&display=swap");
 @import "tailwindcss";
 
+@plugin "daisyui";
+
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
