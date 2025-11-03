@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, datetime, time
 from typing import List, Optional
 import uuid
 
@@ -42,6 +42,12 @@ class StudentClassDaily(BaseModel):
     start_time: time
     end_time: time
 
+class MonthlyClassItem(BaseModel):
+    class_date: datetime
+    class_code: str
+    class_name: str
+    start_time: time
+    end_time: time
 
 class DailyClassResponse(BaseModel):
     date: date

@@ -1,3 +1,4 @@
+import datetime
 from typing import List
 import uuid
 import asyncpg
@@ -74,6 +75,74 @@ async def get_daily_classes(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An error occurred while fetching daily classes.",
+            )
+
+
+async def get_monthly_classes(
+    current_user: User, date_in_month: datetime.date
+) -> List[asyncpg.Record]:
+    """
+    Fetches all class instances (including their specific dates) for the
+    currently authenticated student for the month of the provided date_in_month,
+    excluding any cancelled classes.
+    """
+    
+    pool = get_pool()
+    if not pool:
+        raise HTTPException(status_code=500, detail="DB pool not initialized")
+
+    start_of_month = date_in_month.replace(day=1)
+    
+    if date_in_month.month == 12:
+        next_month_start = date_in_month.replace(year=date_in_month.year + 1, month=1, day=1)
+    else:
+        next_month_start = date_in_month.replace(month=date_in_month.month + 1, day=1)
+        
+    end_of_month = next_month_start - datetime.timedelta(days=1)
+    
+    student_id = current_user.id
+
+    sql_query = """
+        SELECT
+            dates.class_date,
+            sc.class_code,
+            sc.class_name,
+            cm.start_time,
+            cm.end_time
+        FROM
+            generate_series($1::date, $2::date, '1 day'::interval) AS dates(class_date)
+        JOIN
+            class_meetings AS cm
+                ON MOD(EXTRACT(DOW FROM dates.class_date) + 6, 7) = cm.weekday
+        JOIN
+            student_classes AS sc ON cm.student_class_id = sc.id
+        LEFT JOIN
+            class_cancellations AS cc
+                ON cm.id = cc.class_meeting_id
+                AND dates.class_date = cc.cancellation_date
+        WHERE
+            sc.student_id = $3
+            AND dates.class_date BETWEEN sc.class_start_date AND sc.class_end_date
+            AND cc.id IS NULL
+        ORDER BY
+            dates.class_date, cm.start_time;
+    """
+
+    async with pool.acquire() as conn:
+        try:
+            class_records = await conn.fetch(
+                sql_query,
+                start_of_month,
+                end_of_month, # Passed as the inclusive end date for generate_series
+                student_id,
+            )
+            return class_records
+
+        except Exception as e:
+            print(f"Error fetching monthly classes: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An error occurred while fetching monthly classes.",
             )
 
 
