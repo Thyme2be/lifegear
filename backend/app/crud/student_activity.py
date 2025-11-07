@@ -37,12 +37,22 @@ def get_daily_activity(
     return activities_list
 
 
-def get_monthly_activities_crud(user_id: UUID) -> List[StudentActivityResponse]:
+def get_monthly_activities_crud(
+    user_id: UUID, target_date: date
+) -> List[StudentActivityResponse]:
 
-    today_start = datetime.now(timezone.utc).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
-    month_start = today_start.replace(day=1)
+    if target_date is None:
+        today_start = datetime.now(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        month_start = today_start.replace(day=1)
+    else:
+        month_start = datetime.combine(
+            target_date.replace(day=1),
+            datetime.min.time(),
+            tzinfo=timezone.utc,
+        )
+        
     next_month_start = month_start + relativedelta(months=1)
 
     response = (

@@ -49,7 +49,7 @@ async def get_daily_student_classes(
 
 # MIGRATE TO THIS API
 @student_class_router.get(
-    "/{target_date}",
+    "/daily/{target_date}",
     response_model=DailyClassResponse,
     summary="Get Classes for a Specific Date",
     description="Fetches the schedule for the currently authenticated student for a specific date (YYYY-MM-DD).",

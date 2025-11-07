@@ -34,7 +34,7 @@ def get_today_activities(current_user: User = Depends(get_current_active_user)):
 
 # MIGRATE TO THIS API
 @student_activity_router.get(
-    "/{target_date}",
+    "/daily/{target_date}",
     response_model=List[StudentActivityResponse],
     summary=f"Get student's activities for a specific date",
 )
@@ -52,8 +52,10 @@ def get_specific_date_activities(
 
 @student_activity_router.get("/monthly")
 def get_monthly_activities(current_user: User = Depends(get_current_active_user)):
+    today = date.today()
+    
     try:
-        activities = get_monthly_activities_crud(user_id=current_user.id)
+        activities = get_monthly_activities_crud(user_id=current_user.id, target_date=today)
         return activities
     except Exception as e:
         raise HTTPException(

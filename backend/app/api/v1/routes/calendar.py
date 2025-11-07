@@ -9,9 +9,12 @@ from schemas.auth import User
 
 calendar_router = APIRouter()
 
+
 # WAIT FOR DELETE
 @calendar_router.get("/daily")
-async def get_daily_schedule(current_user: User = Depends(get_current_active_user)) -> DailyScheduleResponse:
+async def get_daily_schedule(
+    current_user: User = Depends(get_current_active_user),
+) -> DailyScheduleResponse:
     if current_user.role != "student":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -31,7 +34,7 @@ async def get_daily_schedule(current_user: User = Depends(get_current_active_use
 
     try:
         # This function is synchronous, so no await
-        activities_list = get_daily_activity(user_id=current_user.id)
+        activities_list = get_daily_activity(user_id=current_user.id, target_date=today)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -42,9 +45,12 @@ async def get_daily_schedule(current_user: User = Depends(get_current_active_use
         date=today, classes=classes_list_dicts, activities=activities_list
     )
 
+
 # MIGRATE TO THIS API
-@calendar_router.get("/{target_date}")
-async def get_daily_schedule(current_user: User = Depends(get_current_active_user), target_date: date = None) -> DailyScheduleResponse:
+@calendar_router.get("/daily/{target_date}")
+async def get_daily_schedule(
+    current_user: User = Depends(get_current_active_user), target_date: date = None
+) -> DailyScheduleResponse:
     if current_user.role != "student":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -64,7 +70,9 @@ async def get_daily_schedule(current_user: User = Depends(get_current_active_use
 
     try:
         # This function is synchronous, so no await
-        activities_list = get_daily_activity(user_id=current_user.id, target_date=target_date)
+        activities_list = get_daily_activity(
+            user_id=current_user.id, target_date=target_date
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -76,9 +84,11 @@ async def get_daily_schedule(current_user: User = Depends(get_current_active_use
     )
 
 
-
 @calendar_router.get("/monthly")
-async def get_monthly_schedule(current_user: User = Depends(get_current_active_user)) -> MonthlyScheduleResponse:
+async def get_monthly_schedule(
+    current_user: User = Depends(get_current_active_user),
+) -> MonthlyScheduleResponse:
+    
     if current_user.role != "student":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -102,7 +112,7 @@ async def get_monthly_schedule(current_user: User = Depends(get_current_active_u
         )
 
     try:
-        monthly_activities = get_monthly_activities_crud(current_user.id)
+        monthly_activities = get_monthly_activities_crud(current_user.id, target_date=today)
     except HTTPException:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -114,7 +124,55 @@ async def get_monthly_schedule(current_user: User = Depends(get_current_active_u
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error fetching monthly activities.",
         )
-        
+
+    classes_as_dicts = [dict(record) for record in monthly_classes]
+
+    return {"classes": classes_as_dicts, "activities": monthly_activities}
+
+
+@calendar_router.get("/monthly/{target_date}")
+async def get_monthly_schedule(
+    current_user: User = Depends(get_current_active_user), target_date: date = None
+) -> MonthlyScheduleResponse:
+    
+    if current_user.role != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can access their monthly schedule",
+        )
+
+    current_month = target_date
+
+    try:
+        monthly_classes = await get_monthly_classes(current_user, current_month)
+    except HTTPException:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching monthly classes: {e}",
+        )
+    except Exception as e:
+        print(f"Unexpected error in get_monthly_schedule: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching monthly activities.",
+        )
+
+    try:
+        monthly_activities = get_monthly_activities_crud(
+            current_user.id, target_date=current_month
+        )
+    except HTTPException:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching monthly classes: {e}",
+        )
+    except Exception as e:
+        print(f"Unexpected error in get_monthly_schedule: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching monthly activities.",
+        )
+
     classes_as_dicts = [dict(record) for record in monthly_classes]
 
     return {"classes": classes_as_dicts, "activities": monthly_activities}
