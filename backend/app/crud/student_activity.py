@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from dateutil.relativedelta import relativedelta
 from typing import List
 from fastapi import HTTPException, status
@@ -7,20 +7,20 @@ from db.base import supabase
 from uuid import UUID, uuid4
 
 
-def get_daily_activity(user_id: UUID) -> List[StudentActivityResponse]:
+def get_daily_activity(
+    user_id: UUID, target_date: date
+) -> List[StudentActivityResponse]:
 
-    today_start = datetime.now(timezone.utc).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
+    day_start = datetime.combine(target_date, datetime.min.time(), tzinfo=timezone.utc)
 
-    tomorrow_start = today_start + timedelta(days=1)
+    next_day_start = day_start + timedelta(days=1)
 
     response = (
         supabase.table("student_activities")
         .select("activities(title, start_at, end_at)")
         .eq("student_id", str(user_id))
-        .lt("activities.start_at", tomorrow_start.isoformat())
-        .gt("activities.end_at", today_start.isoformat())
+        .lt("activities.start_at", next_day_start.isoformat())
+        .gt("activities.end_at", day_start.isoformat())
         .order("start_at", desc=False, foreign_table="activities")
         .execute()
     )
@@ -44,7 +44,7 @@ def get_monthly_activities_crud(user_id: UUID) -> List[StudentActivityResponse]:
     )
     month_start = today_start.replace(day=1)
     next_month_start = month_start + relativedelta(months=1)
-    
+
     response = (
         supabase.table("student_activities")
         .select("activities(title, start_at, end_at)")

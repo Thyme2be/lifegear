@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List
 from fastapi import APIRouter, Depends, status, HTTPException
 from schemas.student_activity import StudentActivityResponse, StudentActivityCreate
@@ -14,6 +15,7 @@ from schemas.auth import User
 student_activity_router = APIRouter()
 
 
+# WAIT FOR DELETE
 @student_activity_router.get(
     "/daily",
     response_model=List[StudentActivityResponse],
@@ -21,12 +23,31 @@ student_activity_router = APIRouter()
 )
 def get_today_activities(current_user: User = Depends(get_current_active_user)):
     try:
-        activities = get_daily_activity(user_id=current_user.id)
+        today = date.today()
+        activities = get_daily_activity(user_id=current_user.id, target_date=today)
         return activities
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
+
+
+# MIGRATE TO THIS API
+@student_activity_router.get(
+    "/{target_date}",
+    response_model=List[StudentActivityResponse],
+    summary=f"Get student's activities for a specific date",
+)
+def get_specific_date_activities(
+    target_date: date, current_user: User = Depends(get_current_active_user)
+):
+    try:
+        activities = get_daily_activity(
+            user_id=current_user.id, target_date=target_date
+        )
+        return activities
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @student_activity_router.get("/monthly")
