@@ -25,10 +25,15 @@ export const apiRoutes = {
   getAllUsers: `${apiBase}/users`,
 
   // Daily Routes
-  getMyDailyEvents: `${apiBase}/calendar/daily`,
+  getMyDailyEvents(date: string) {
+    // ถ้า backend คุณมี endpoint `/calendar/daily`
+    return `${apiBase}/calendar/daily?date=${date}`;
+  },
 
   // Monthly Routes
-  getMyMonthlyEvents: `${apiBase}/calendar/monthly`,
+  getMyMonthlyEvents(ym: string) {
+    return `${apiBase}/calendar/monthly?ym=${ym}`;
+  },
 
   // Add activity to my life
   addActivityToMyLife: `${apiBase}/student-activities`,

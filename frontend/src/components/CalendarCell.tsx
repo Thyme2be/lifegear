@@ -36,11 +36,6 @@ function CalendarCellBase({
     }
   };
 
-  const handleShowMore = (e: React.MouseEvent | React.KeyboardEvent) => {
-    e.stopPropagation(); // ไม่ให้ไปทริกเกอร์ select cell
-    onShowMore?.(day, events);
-  };
-
   return (
     <div
       role="gridcell"
@@ -78,21 +73,12 @@ function CalendarCellBase({
         })}
 
         {hasMore && (
-          <button
-            type="button"
-            onClick={handleShowMore}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleShowMore(e);
-              }
-            }}
-            title={`ดูทั้งหมดของวันที่ ${day}`} // tooltip แสดงแน่
-            aria-label={`ดูทั้งหมดของวันที่ ${day}`} // เพื่อการเข้าถึง
+          <div
+            title={`ดูทั้งหมด (+${moreCount})`}
             className="w-full text-left text-[10px] sm:text-xs px-1 rounded truncate font-semibold bg-[#74E3B3] text-[#053b2b] focus:outline-none focus:ring-2 focus:ring-[#F1D500]/60"
           >
-            ดูทั้งหมด (+{moreCount})
-          </button>
+            ....
+          </div>
         )}
       </div>
     </div>
