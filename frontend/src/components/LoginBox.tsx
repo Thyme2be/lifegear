@@ -55,20 +55,20 @@ const LoginBox = () => {
       <div className="w-full"></div>
 
       <div className="w-full">
-        <h1 className="text-3xl sm:text-4xl text-center text-black font-extrabold font-serif-thai text-shadow-lg/20">
+        <h1 className="heading text-center text-black font-serif-thai">
           เข้าสู่ระบบ
         </h1>
 
         <form action="#" className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {/* Student ID */}
           <div className="space-y-2">
-            <label className="block text-base sm:text-lg text-black font-extrabold font-serif-thai text-shadow-lg/20">
+            <label className="block text-base sm:text-lg text-black font-extrabold font-serif-thai">
               เลขทะเบียนนักศึกษา
             </label>
             <input
               type="text"
               required
-              placeholder="6xxxxxxxxx"
+              placeholder="Student ID"
               id="studentId"
               value={studentId}
               onInvalid={(e) =>
@@ -88,14 +88,14 @@ const LoginBox = () => {
 
           {/* Password */}
           <div className="space-y-2 relative">
-            <label className="block text-base sm:text-lg text-black font-extrabold font-serif-thai text-shadow-lg/20">
+            <label className="block text-base sm:text-lg text-black font-extrabold font-serif-thai">
               รหัสผ่าน
             </label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 required
-                placeholder="Tsexxxxx"
+                placeholder="Password"
                 id="password"
                 value={password}
                 onInvalid={(e) =>
@@ -126,7 +126,13 @@ const LoginBox = () => {
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  className="w-5 h-5 sm:w-7 sm:h-7 cursor-pointer"
+                  className="w-5 h-5 sm:w-7 sm:h-7 cursor-pointer appearance-none border-none outline-none
+                  shadow-[4px_4px_12px_rgba(107,114,128,0.3),_-4px_-4px_12px_rgba(107,114,128,0.3)]
+                  rounded-md bg-white
+                  checked:bg-blue-500 checked:shadow-inner
+                  transition-all duration-200
+                  flex items-center justify-center
+                  checked:before:content-['✔'] checked:before:text-white checked:before:text-sm"
                   required
                   onInvalid={(e) =>
                     (e.target as HTMLInputElement).setCustomValidity(
@@ -148,13 +154,15 @@ const LoginBox = () => {
           </div>
 
           {/* Login Button */}
-          <button
-            type="submit"
-            className="w-full py-3 bg-[#F1D500] text-black font-extrabold rounded-full text-xl sm:text-2xl font-serif-thai cursor-pointer
-            hover:bg-[#e0c603] transition-colors duration-100"
-          >
-            เข้าสู่ระบบ
-          </button>
+          <div className="flex justify-center">
+            <button
+              type="submit"
+              className="py-3 px-10 bg-[#F1D500] text-black font-extrabold rounded-4xl text-xl sm:text-2xl font-serif-thai cursor-pointer
+              hover:bg-[#e0c603] transition-colors duration-100 shadow-md/50"
+            >
+              เข้าสู่ระบบ
+            </button>
+          </div>
         </form>
       </div>
     </section>
