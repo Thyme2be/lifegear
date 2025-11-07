@@ -1,7 +1,7 @@
 // src/app/(home)/page/page.tsx
 import type { Metadata } from "next";
 import BannerSliderWrapper from "@/components/BannerSliderWrapper";
-import FeatureCard from "@/components/FeatureCard";
+import FeatureCard from "@/components/ActivityCard";
 
 export const metadata: Metadata = {
   title: "LifeGear | Homepage",
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <main className="bg-primary">
+    <main className="bg-cream">
 
       {/* Hero Section with Slider */}
       <BannerSliderWrapper />
@@ -20,7 +20,7 @@ export default function Home() {
         <h1 className="heading mb-4 text-center text-main">
           ขอต้อนรับเข้าสู่เว็บไซต์ <span className="text-black">LifeGear</span>
         </h1>
-        <p className="mb-10 leading-relaxed whitespace-pre-line text-sm text-secondary sm:text-base">
+        <p className="mb-10 leading-relaxed whitespace-pre-line text-sm text-black sm:text-base">
           &quot;...หมดปัญหาสับสนเรื่องตารางเรียนหรือกิจกรรมคณะ! LifeGear ช่วยจัดระเบียบชีวิตนักศึกษาวิศวะให้ลงตัว <br />
           ด้วยระบบปฏิทินรายเดือนที่รวมทุกอย่างไว้ครบ ทั้งตารางเรียน กิจกรรม และการเพิ่มกิจกรรมส่วนตัว ใช้งานสะดวก <br />
           ครบจบในเว็บเดียว...&quot;

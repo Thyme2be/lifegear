@@ -1,8 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;700&display=swap");
 @import "tailwindcss";
 
-@plugin "daisyui";
-
+@plugin "daisyui" {
+  themes: false;
+  root: ":root";
+  include: ;
+  exclude: ;
+  prefix: ;
+  logs: true;
+}
 
 :root {
   --background: #ffffff;
@@ -15,7 +21,7 @@
   --color-primary: #f6f1e7;
   --color-bf-btn: #b30000;
   --color-btn-hover: #880000;
-  --color-cream: #FFFEF4;
+  --color-cream: #fffef4;
 }
 
 @media (prefers-color-scheme: dark) {

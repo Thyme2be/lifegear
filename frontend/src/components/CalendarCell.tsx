@@ -1,28 +1,59 @@
-// src/components/monthly/CalendarCell.tsx
-import Link from "next/link";
+"use client";
+
 import React from "react";
-import type { DayEvent } from "@/types/monthly";
+import type { CalendarEvent } from "@/types/calendar";
 
 type Props = {
   day: number;
-  events: DayEvent[];
+  events: CalendarEvent[];
   highlight: boolean;
-  onShowMore?: (day: number, events: DayEvent[]) => void;
+  selected?: boolean;
+  onShowMore?: (day: number, events: CalendarEvent[]) => void;
+  onSelectDay?: (day: number) => void;
 };
 
-function CalendarCellBase({ day, events, highlight, onShowMore }: Props) {
+function CalendarCellBase({
+  day,
+  events,
+  highlight,
+  selected = false,
+  onShowMore,
+  onSelectDay,
+}: Props) {
   const MAX_EVENTS = 3;
   const visibleEvents = events.slice(0, MAX_EVENTS);
-  const hasMore = events.length > MAX_EVENTS;
+  const moreCount = Math.max(0, events.length - MAX_EVENTS);
+  const hasMore = moreCount > 0;
+
+  const selectThisDay = React.useCallback(() => {
+    onSelectDay?.(day);
+  }, [onSelectDay, day]);
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      selectThisDay();
+    }
+  };
+
+  const handleShowMore = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.stopPropagation(); // ไม่ให้ไปทริกเกอร์ select cell
+    onShowMore?.(day, events);
+  };
 
   return (
     <div
       role="gridcell"
-      aria-selected={highlight || undefined}
+      aria-selected={highlight || selected || undefined}
+      onPointerDownCapture={selectThisDay}
+      onKeyDown={onKeyDown}
+      tabIndex={0}
       className={[
         "relative rounded-lg border p-1 sm:p-1.5 text-gray-700 bg-white",
-        "aspect-square flex flex-col",
+        "aspect-square flex flex-col cursor-pointer",
         highlight ? "bg-yellow-100 border-[#D1B79E]" : "",
+        selected ? "ring-2 ring-[#F1D500]" : "",
+        "focus:outline-none focus:ring-2 focus:ring-[#F1D500]/60",
       ].join(" ")}
     >
       <span className="absolute top-1 right-1 text-xs sm:text-[13px] font-bold">
@@ -30,32 +61,37 @@ function CalendarCellBase({ day, events, highlight, onShowMore }: Props) {
       </span>
 
       <div className="mt-5 sm:mt-6 space-y-1 overflow-hidden">
-        {visibleEvents.map((ev) => (
-          <Link
-            key={ev.id}
-            href={`/activity/${ev.id}`}
-            className="block bg-[#FFCA64] text-[#5A2E00] text-[10px] sm:text-xs px-1 rounded truncate font-semibold"
-            title={ev.title}
-          >
-            {ev.title}
-          </Link>
-        ))}
+        {visibleEvents.map((ev) => {
+          const isClass = ev.kind === "class";
+          const bgColor = isClass ? "bg-[#A3BBEE]" : "bg-[#FFCA64]";
+          const textColor = isClass ? "text-[#002B7A]" : "text-[#5A2E00]";
+
+          return (
+            <div
+              key={ev.id}
+              className={`block ${bgColor} ${textColor} text-[10px] sm:text-xs px-1 rounded truncate font-semibold`}
+              title={ev.title} // tooltip native
+            >
+              {ev.title}
+            </div>
+          );
+        })}
 
         {hasMore && (
           <button
             type="button"
-            onClick={() =>
-              onShowMore
-                ? onShowMore(day, events)
-                : alert(
-                    `กิจกรรมทั้งหมดของวันที่ ${day}\n\n${events
-                      .map((e) => "• " + e.title)
-                      .join("\n")}`
-                  )
-            }
-            className="w-full flex justify-left text-[10px] bg-[#74E3B3] sm:text-xs text-[#5A2E00] underline cursor-pointer px-1 rounded truncate font-semibold"
+            onClick={handleShowMore}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleShowMore(e);
+              }
+            }}
+            title={`ดูทั้งหมดของวันที่ ${day}`} // tooltip แสดงแน่
+            aria-label={`ดูทั้งหมดของวันที่ ${day}`} // เพื่อการเข้าถึง
+            className="w-full text-left text-[10px] sm:text-xs px-1 rounded truncate font-semibold bg-[#74E3B3] text-[#053b2b] focus:outline-none focus:ring-2 focus:ring-[#F1D500]/60"
           >
-            ...ดูทั้งหมด
+            ดูทั้งหมด (+{moreCount})
           </button>
         )}
       </div>
@@ -63,6 +99,21 @@ function CalendarCellBase({ day, events, highlight, onShowMore }: Props) {
   );
 }
 
-/** ป้องกัน re-render เกินจำเป็นเมื่อ props ไม่เปลี่ยน */
-const CalendarCell = React.memo(CalendarCellBase);
-export default CalendarCell;
+function propsAreEqual(prev: Props, next: Props) {
+  if (prev.day !== next.day) return false;
+  if (prev.highlight !== next.highlight) return false;
+  if (prev.selected !== next.selected) return false;
+  if (prev.events.length !== next.events.length) return false;
+
+  // ตรวจ 3 รายการแรกเพื่อเร่ง perf
+  for (let i = 0; i < 3; i++) {
+    const a = prev.events[i];
+    const b = next.events[i];
+    if (!a && !b) continue;
+    if (!a || !b) return false;
+    if (a.id !== b.id || a.title !== b.title || a.kind !== b.kind) return false;
+  }
+  return true;
+}
+
+export default React.memo(CalendarCellBase, propsAreEqual);

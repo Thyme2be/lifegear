@@ -1,3 +1,5 @@
+// src/lib/datetime.ts
+
 export const THAI_MONTHS = [
   "มกราคม",
   "กุมภาพันธ์",
@@ -169,4 +171,38 @@ export function generateCalendarGrid(
   for (let i = 0; i < offset; i++) grid.push(null);
   for (let day = 1; day <= daysInMonth; day++) grid.push(day);
   return grid;
+}
+
+export type YMD0 = { y: number; m0: number; d: number }; // m0 = 0..11
+
+// ✅ เพิ่ม helper: ถ้าไม่มี timezone ให้ถือเป็น Bangkok (+07:00)
+function ensureBangkokIso(iso: string) {
+  // 2025-11-04T10:20:00 หรือ 2025-11-04 10:20:00  (ไม่มี Z/±hh:mm)
+  if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}$/.test(iso)) {
+    return iso.replace(" ", "T") + "+07:00";
+  }
+  return iso;
+}
+
+export function ymdInBangkok(iso?: string | null): YMD0 | null {
+  if (!iso || typeof iso !== "string") return null;
+  const dt = new Date(ensureBangkokIso(iso)); // ✅ ใช้ helper
+  if (Number.isNaN(dt.valueOf())) return null;
+
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = fmt.formatToParts(dt);
+  const get = (t: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === t)?.value;
+
+  const y = Number(get("year"));
+  const m = Number(get("month"));
+  const d = Number(get("day"));
+  if (!y || !m || !d) return null;
+
+  return { y, m0: m - 1, d };
 }

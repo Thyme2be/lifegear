@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import ProfileInfo from "./ProfileInfo";
 import axios from "axios";
-import type { User } from "@/types/activity";
+import type { User } from "@/types/activities";
 import Link from "next/link";
 import { apiRoutes } from "@/lib/apiRoutes";
 

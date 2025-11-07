@@ -1,10 +1,10 @@
 "use client";
-import ActivityList from "@/components/ActivityList";
+import React from "react";
 import SearchBox from "@/components/SearchBox";
 import { useActivity } from "@/hooks/useActivity";
+import ActivityList from "@/components/ActivityList";
 
 export default function ActivityPage() {
-
   const {
     filteredActivities,
     loading,
@@ -13,7 +13,6 @@ export default function ActivityPage() {
     setSearchText,
     selectedFilters,
     handleFilterChange,
-    handleSearch,
   } = useActivity();
 
   if (loading) {
@@ -35,7 +34,8 @@ export default function ActivityPage() {
           onSearchTextChange={setSearchText}
           selectedFilters={selectedFilters}
           onFilterChange={handleFilterChange}
-          onSubmit={handleSearch}
+          isLoading={loading}
+          className="sm:col-span-1"
         />
 
         <section className="sm:col-span-3 space-y-6">

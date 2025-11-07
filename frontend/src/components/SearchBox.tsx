@@ -24,7 +24,6 @@ function SearchBoxBase({
   selectedFilters,
   onFilterChange,
   onSubmit,
-  isLoading = false,
   className,
 }: SearchBoxProps) {
   const groupId = useId();
@@ -101,19 +100,6 @@ function SearchBoxBase({
             })}
           </ul>
         </fieldset>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={clsx(
-            "w-full rounded-full py-2 font-bold shadow-md transition cursor-pointer",
-            "bg-[#F1D500] text-black hover:bg-[#e0c603]",
-            isLoading && "opacity-70 cursor-not-allowed"
-          )}
-          aria-busy={isLoading || undefined}
-        >
-          {isLoading ? "กำลังค้นหา..." : "ค้นหา"}
-        </button>
       </form>
     </aside>
   );

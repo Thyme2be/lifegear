@@ -5,7 +5,12 @@
 import React, { forwardRef } from "react";
 import Link from "next/link";
 import { IoEyeSharp } from "react-icons/io5";
-import { buttonClasses, iconSizeClasses, type BtnSize, type BtnVariant } from "@/lib/ui/buttonStyles";
+import {
+  buttonClasses,
+  iconSizeClasses,
+  type BtnSize,
+  type BtnVariant,
+} from "@/lib/ui/buttonStyles";
 
 export interface MoreInfoButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -19,9 +24,26 @@ export interface MoreInfoButtonProps
 }
 
 const Spinner = () => (
-  <svg aria-hidden="true" viewBox="0 0 24 24" className="mr-2 h-4 w-4 animate-spin">
-    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.25" />
-    <path d="M22 12a10 10 0 0 1-10 10" fill="none" stroke="currentColor" strokeWidth="4" />
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 24 24"
+    className="mr-2 h-4 w-4 animate-spin"
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+      fill="none"
+      opacity="0.25"
+    />
+    <path
+      d="M22 12a10 10 0 0 1-10 10"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="4"
+    />
   </svg>
 );
 
@@ -56,7 +78,9 @@ const MoreInfoButton = forwardRef<HTMLButtonElement, MoreInfoButtonProps>(
         <Link
           href={href}
           prefetch={prefetch}
-          className={`${root} ${isDisabled ? "pointer-events-none opacity-60" : ""}`}
+          className={`${root} ${
+            isDisabled ? "pointer-events-none opacity-60" : ""
+          }`}
           aria-disabled={isDisabled || undefined}
           aria-label={ariaLabel}
           title={ariaLabel}

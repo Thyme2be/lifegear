@@ -1,99 +1,173 @@
-"useclient";
+// src/hooks/useActivity.ts
+"use client";
+
 import { useState, useEffect, useMemo, useCallback } from "react";
-import axios from 'axios';
-import { ActivityThumbnailResponse } from "@/types/activity";
+import axios, { AxiosError } from "axios";
+import type { ActivityThumbnailResponse } from "@/types/activities";
 import { ActivityCategory } from "@/lib/enums/activity";
 import { apiRoutes } from "@/lib/apiRoutes";
 import { normalizeCategory } from "@/utils/activityUtils";
-import { MaybeCategory } from "@/types/activity";
+
+type MaybeCategory = {
+  category?: unknown;
+  category_code?: unknown;
+};
+
+type ServerError = {
+  message?: string;
+  detail?: string;
+  error?: string;
+};
 
 const FILTER_OPTIONS = Object.values(ActivityCategory) as ActivityCategory[];
 
+/** ดึงข้อความจาก server response แบบ type-safe */
+function getServerMessage(data: unknown): string | undefined {
+  if (data && typeof data === "object") {
+    const d = data as ServerError;
+    return d.message || d.detail || d.error;
+  }
+  return undefined;
+}
+
 export function useActivity() {
-    const [activities, setActivities] = useState<ActivityThumbnailResponse[]>([]);
-    const [filteredActivities, setFilteredActivities] = useState<ActivityThumbnailResponse[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [searchText, setSearchText] = useState<string>("");
-    const [selectedFilters, setSelectedFilters] = useState<ActivityCategory[]>([]);
+  const [activities, setActivities] = useState<ActivityThumbnailResponse[]>([]);
+  const [filteredActivities, setFilteredActivities] = useState<
+    ActivityThumbnailResponse[]
+  >([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-    // เก็บ Set ของหมวดเพื่อเช็ค “รู้จัก/ไม่รู้จัก” เร็วขึ้น และไม่ recreate
-    const knownCategories = useMemo(() => new Set<ActivityCategory>(FILTER_OPTIONS), []);
+  const [searchText, setSearchText] = useState<string>("");
+  const [selectedFilters, setSelectedFilters] = useState<ActivityCategory[]>(
+    []
+  );
 
-    // โหลดข้อมูลแบบยกเลิกได้เมื่อ unmount (axios v1 รองรับ signal)
-    useEffect(() => {
-        const controller = new AbortController();
+  // Set ของหมวดที่รองรับ (ไม่ recreate)
+  const knownCategories = useMemo(
+    () => new Set<ActivityCategory>(FILTER_OPTIONS),
+    []
+  );
 
-        (async () => {
-            try {
-                setLoading(true);
-                const { data } = await axios.get<ActivityThumbnailResponse[]>(
-                    apiRoutes.getAllActivitiesThumbnails,
-                    { withCredentials: true, timeout: 10000, signal: controller.signal }
-                );
-                setActivities(data);
-                setFilteredActivities(data);
-            } catch (err: unknown) {
-                if (axios.isCancel(err)) return;
-                const message = err instanceof Error ? err.message : "โหลดข้อมูลล้มเหลว";
-                setError(message);
-            } finally {
-                setLoading(false);
-            }
-        })();
+  // โหลดข้อมูล (ยกเลิกได้)
+  useEffect(() => {
+    const controller = new AbortController();
+    let canceled = false;
 
-        return () => controller.abort();
-    }, []);
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-    const handleFilterChange = useCallback((value: ActivityCategory) => {
-        setSelectedFilters((prev) =>
-            prev.includes(value) ? prev.filter((f) => f !== value) : [...prev, value]
+        const { data } = await axios.get<ActivityThumbnailResponse[]>(
+          apiRoutes.getAllActivitiesThumbnails,
+          { withCredentials: true, timeout: 10000, signal: controller.signal }
         );
-    }, []);
 
-    // กรองเมื่อกด Search 
-    const handleSearch = useCallback(() => {
-        const q = searchText.trim().toLowerCase();
-        const activeFilters = selectedFilters;
+        if (!canceled) {
+          const list = Array.isArray(data) ? data : [];
+          setActivities(list);
+          setFilteredActivities(list);
+        }
+      } catch (err: unknown) {
+        if (axios.isCancel(err)) return;
 
-        const filtered = activities.filter((a) => {
-            const title = (a.title ?? "").toLowerCase();
-            const matchText = q === "" ? true : title.includes(q);
+        let message = "โหลดข้อมูลล้มเหลว";
+        if (axios.isAxiosError(err)) {
+          const ax = err as AxiosError<unknown>;
+          message =
+            getServerMessage(ax.response?.data) || ax.message || message;
+        } else if (err instanceof Error) {
+          message = err.message || message;
+        }
+        if (!canceled) setError(message);
+      } finally {
+        if (!canceled) setLoading(false);
+      }
+    })();
 
-            // ไม่เลือก filter ใด ๆ => ดูแต่ข้อความ
-            if (activeFilters.length === 0) return matchText;
+    return () => {
+      canceled = true;
+      controller.abort();
+    };
+  }, []);
 
-            // ดึง category จากหลายคีย์
-            const maybe = a as unknown as MaybeCategory;
-            const category =
-                normalizeCategory(maybe.category) ?? normalizeCategory(maybe.category_code);
+  // toggle filter รายตัว
+  const handleFilterChange = useCallback((value: ActivityCategory) => {
+    setSelectedFilters((prev) =>
+      prev.includes(value) ? prev.filter((f) => f !== value) : [...prev, value]
+    );
+  }, []);
 
-            // ถ้ามี Others: ให้ผ่านกรณี category ที่ไม่รู้จักด้วย
-            if (activeFilters.includes(ActivityCategory.Others)) {
-                const isKnown = category ? knownCategories.has(category) : false;
-                const matchFilter = (category && activeFilters.includes(category)) || !isKnown;
-                return matchText && matchFilter;
-            }
+  // reset ฟิลเตอร์ทั้งหมด
+  const resetFilters = useCallback(() => {
+    setSelectedFilters([]);
+    setSearchText("");
+  }, []);
 
-            return matchText && !!category && activeFilters.includes(category);
-        });
+  // สตริงค้นหาแบบ normalize (lowercase+trim)
+  const normQ = useMemo(() => searchText.trim().toLowerCase(), [searchText]);
 
-        setFilteredActivities(filtered);
-    }, [activities, knownCategories, searchText, selectedFilters]);
+  // คำนวณผลกรองทุกครั้งที่ activities/filters/searchText เปลี่ยน
+  useEffect(() => {
+    // ฟังก์ชันช่วยอ่านหมวดจาก activity (รองรับ category|category_code)
+    const extractCategory = (
+      a: ActivityThumbnailResponse
+    ): ActivityCategory | undefined => {
+      const maybe = a as unknown as MaybeCategory;
+      return (
+        normalizeCategory(maybe.category) ??
+        normalizeCategory(maybe.category_code) ??
+        undefined
+      );
+    };
 
+    const activeFilters = selectedFilters;
 
-    return {
-        activities,
-        filteredActivities,
-        loading,
-        error,
-        searchText,
-        setSearchText,
-        selectedFilters,
-        handleFilterChange,
-        handleSearch,
-    }
+    const next = activities.filter((a) => {
+      const title = (a.title ?? "").toLowerCase();
+      const matchText = normQ === "" ? true : title.includes(normQ);
 
+      if (activeFilters.length === 0) return matchText;
 
+      const category = extractCategory(a);
 
+      // ถ้าเลือก Others → ให้รายการที่ category ไม่รู้จักผ่านด้วย
+      if (activeFilters.includes(ActivityCategory.Others)) {
+        const isKnown = category ? knownCategories.has(category) : false;
+        const matchFilter =
+          (category && activeFilters.includes(category)) || !isKnown;
+        return matchText && matchFilter;
+      }
+
+      return matchText && !!category && activeFilters.includes(category);
+    });
+
+    setFilteredActivities(next);
+  }, [activities, selectedFilters, normQ, knownCategories]);
+
+  // สำหรับกรณีอยากมีปุ่ม Search ชัด ๆ (ทางเลือก)
+  const handleSearch = useCallback(() => {
+    // ไม่ต้องทำอะไร เพราะ useEffect ด้านบนจะรันเองจาก state ปัจจุบัน
+  }, []);
+
+  return {
+    activities,
+    filteredActivities,
+    loading,
+    error,
+
+    // search
+    searchText,
+    setSearchText,
+
+    // filters
+    selectedFilters,
+    setSelectedFilters,
+    handleFilterChange,
+    resetFilters,
+
+    // optional: ปุ่ม search
+    handleSearch,
+  };
 }

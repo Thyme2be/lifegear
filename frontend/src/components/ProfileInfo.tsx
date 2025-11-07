@@ -3,7 +3,7 @@
 import axios from "axios";
 import { CgProfile } from "react-icons/cg";
 import { FaIdCard } from "react-icons/fa";
-import type { User } from "@/types/activity";
+import type { User } from "@/types/activities";
 import { apiRoutes } from "@/lib/apiRoutes";
 
 type ProfileInfoProps = {

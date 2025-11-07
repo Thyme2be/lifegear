@@ -5,23 +5,34 @@ const apiBase = `${BASE_URL}/api/${API_VERSION}`;
 
 export const apiRoutes = {
   // Auth routes
-  postLogin: `${BASE_URL}/api/${API_VERSION}/auth/login`,
-  postLogout: `${BASE_URL}/api/${API_VERSION}/auth/logout`,
-  //   postRegister: `${BASE_URL}/api/${API_VERSION}/auth/register/`,
+  postLogin: `${apiBase}/auth/login`,
+  postLogout: `${apiBase}/auth/logout`,
 
-  getUserHomeData: `${BASE_URL}/api/${API_VERSION}/auth/user/home`,
-  getUserCheck: `${BASE_URL}/api/${API_VERSION}/auth/check`,
+  //   postRegister: `${apiBase}/auth/register/`,
+  getUserHomeData: `${apiBase}/auth/user/home`,
+  getUserCheck: `${apiBase}/auth/check`,
 
   // Activities routes
-  getAllActivitiesThumbnails: `${BASE_URL}/api/${API_VERSION}/activities/thumbnails`,
+  getAllActivitiesThumbnails: `${apiBase}/activities/thumbnails`,
 
   // SubActivity routes
-  getAllActivities: `${BASE_URL}/api/${API_VERSION}/activities/activity/`,
-  getActivityById(id: string) {
-  return `${apiBase}/activities/activity/${encodeURIComponent(id)}`;
-  },
+  getActivityById: (id: string) =>
+    `${apiBase}/activities/activity/${encodeURIComponent(id)}`,
+  getActivityBySlug: (slug: string) =>
+    `${apiBase}/activities/activity/slug/${encodeURIComponent(slug)}`,
   // You can add other resource routes here
   // e.g., users, products, etc.
-  getAllUsers: `${BASE_URL}/api/${API_VERSION}/users`,
-};
+  getAllUsers: `${apiBase}/users`,
 
+  // Daily Routes
+  getMyDailyEvents: `${apiBase}/calendar/daily`,
+
+  // Monthly Routes
+  getMyMonthlyEvents: `${apiBase}/calendar/monthly`,
+
+  // Add activity to my life
+  addActivityToMyLife: `${apiBase}/student-activities`,
+
+  // You can add other resource routes here
+  // e.g., users, products, etc.
+};

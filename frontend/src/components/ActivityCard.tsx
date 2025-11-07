@@ -11,7 +11,7 @@ interface CardInfo {
     alt?: string;
 }
 
-export default function FeatureCard({ title, subTitle, link, imgSrc, alt }: CardInfo) {
+export default function ActivityCard({ title, subTitle, link, imgSrc, alt }: CardInfo) {
 
 
     return (
