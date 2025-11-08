@@ -16,7 +16,7 @@ from schemas.student_class import (
 
 student_class_router = APIRouter()
 
-
+# WAIT FOR DELETE
 @student_class_router.get(
     "/daily",
     response_model=DailyClassResponse,
@@ -47,16 +47,40 @@ async def get_daily_student_classes(
 
     return DailyClassResponse(date=today, classes=classes_list_as_dicts)
 
+# MIGRATE TO THIS API
+@student_class_router.get(
+    "/daily/{target_date}",
+    response_model=DailyClassResponse,
+    summary="Get Classes for a Specific Date",
+    description="Fetches the schedule for the currently authenticated student for a specific date (YYYY-MM-DD).",
+)
+async def get_specific_date_student_class(
+    target_date: date,
+    current_user: User = Depends(get_current_active_user),
+):
+    if current_user.role != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can access their schedule",
+        )
+
+    classes_list = await get_daily_classes(current_user, target_date)
+    classes_list_as_dict = [dict(record) for record in classes_list]
+
+    return DailyClassResponse(date=target_date, classes=classes_list_as_dict)
+
 
 @student_class_router.get("/monthly")
-async def get_monthly_student_classes(current_user: User = Depends(get_current_active_user)):
+async def get_monthly_student_classes(
+    current_user: User = Depends(get_current_active_user),
+):
     try:
         today = date.today()
-        monthly_schedule = await get_monthly_classes(current_user, today) 
+        monthly_schedule = await get_monthly_classes(current_user, today)
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Unexpected error in get_monthly_schedule: {e}") 
+        print(f"Unexpected error in get_monthly_schedule: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error fetching monthly activities.",
