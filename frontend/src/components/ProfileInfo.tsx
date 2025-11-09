@@ -5,6 +5,7 @@ import { CgProfile } from "react-icons/cg";
 import { FaIdCard } from "react-icons/fa";
 import type { User } from "@/types/activities";
 import { apiRoutes } from "@/lib/apiRoutes";
+import { FiLogOut } from "react-icons/fi";
 
 type ProfileInfoProps = {
   user: User | null;

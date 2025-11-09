@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { toast, ToastContainer, Bounce } from "react-toastify";
 import { ActivityThumbnailResponse } from "@/types/activities";
 
 interface ActivityListProps {
