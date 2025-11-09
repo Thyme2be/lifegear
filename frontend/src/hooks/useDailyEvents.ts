@@ -1,11 +1,16 @@
 // src/hooks/useDailyEvents.ts
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
 import type { calendar, CalendarEvent } from "@/types/calendar";
 import { adaptCalendar } from "@/lib/calendar-adapter";
-import { ymdInBangkok } from "@/lib/datetime";
 import { isAbortError } from "@/lib/is";
+
+function dayRangeUTC(ymd: string) {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const start = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+  const end = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
+  return { start, end };
+}
 
 export function useDailyEvents(dateStr: string, url: string) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -14,7 +19,6 @@ export function useDailyEvents(dateStr: string, url: string) {
 
   useEffect(() => {
     const ac = new AbortController();
-
     (async () => {
       try {
         setLoading(true);
@@ -29,27 +33,25 @@ export function useDailyEvents(dateStr: string, url: string) {
         if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
 
         const data = (await res.json()) as calendar;
-        const all = adaptCalendar(data); // CalendarEvent[]
+        const all = adaptCalendar(data);
         setEvents(all);
-      } catch (e: unknown) {
+      } catch (e) {
         if (isAbortError(e)) return;
-        const msg = e instanceof Error ? e.message : "โหลดข้อมูลไม่สำเร็จ";
-        setError(msg);
+        setError(e instanceof Error ? e.message : "โหลดข้อมูลไม่สำเร็จ");
       } finally {
         setLoading(false);
       }
     })();
-
     return () => ac.abort();
   }, [dateStr, url]);
 
-  // ให้เฉพาะของ "วันนั้น" จริง ๆ (กันกรณี API ส่งมาหลายวัน)
+  // ✅ แสดง event ที่ช่วงเวลาทับซ้อน "ทั้งวัน" นั้น (รองรับกิจกรรมยาวหลายวัน)
   const eventsOfTheDay = useMemo(() => {
-    const [y, m, d] = dateStr.split("-").map((n) => Number(n));
-    const m0 = m - 1;
+    const { start, end } = dayRangeUTC(dateStr);
     return events.filter((ev) => {
-      const ymd = ymdInBangkok(ev.start_at);
-      return ymd && ymd.y === y && ymd.m0 === m0 && ymd.d === d;
+      const s = new Date(ev.start_at);
+      const e = new Date(ev.end_at);
+      return e >= start && s <= end;
     });
   }, [events, dateStr]);
 

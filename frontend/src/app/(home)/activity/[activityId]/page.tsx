@@ -1,17 +1,12 @@
+// app/(home)/activity/[activityId]/page.tsx
 import ActivityDetails from "./ActivityDetails";
-import SubActivityLoading from "./SubActivityLoading";
-import { Suspense } from "react";
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ activityId: string }>;
-}) {
-  const { activityId } = await params;
+
+export default function Page({ params }: { params: { activityId: string } }) {
+  const { activityId } = params;
   return (
-      <main className="p-5 bg-cream">
-      <Suspense fallback={<SubActivityLoading />}>
-        <ActivityDetails activityId={activityId} />
-      </Suspense>
+    <main className="p-5 bg-cream">
+      {/* ActivityDetails เป็น client component อยู่แล้ว */}
+      <ActivityDetails activityId={activityId} />
     </main>
   );
 }

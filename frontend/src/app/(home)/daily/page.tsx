@@ -1,344 +1,628 @@
 // app/(home)/daily/page.tsx
-// ===============================
 "use client";
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import Link from "next/link";
+
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+  memo,
+} from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+
+import RecycleBinWidget from "@/components/RecycleBinWidget";
+import DateNav from "@/components/DateNav";
 import TimeLabel from "@/components/TimeLabel";
+import DailyActionCell from "@/components/DailyActionCell";
+
 import { useNow } from "@/hooks/useNow";
-import { IoChevronDown, IoChevronUp } from "react-icons/io5";
+import { useDailyEvents } from "@/hooks/useDailyEvents";
+import { apiRoutes } from "@/lib/apiRoutes";
+import { toYmdLocal, parseYmd, THAI_MONTHS } from "@/lib/datetime";
 import {
-  toYmdLocal,
-  sameDay,
-  parseYmd,
-  startOfDay,
-  getRangeForDate,
-  THAI_MONTHS,
-} from "@/lib/datetime";
-import { getAllActivities } from "@/lib/mock-activities";
-import MoreInfoButton from "@/components/MoreInfoButton";
-import DeleteButton from "@/components/DeleteButton";
-import {
-  addRemovedId,
   readRemovedIds,
+  readRemovedEntries,
+  addRemovedEntry,
+  removeRemovedId,
+  clearRemovedIds,
+  purgeExpired,
   REMOVED_IDS_KEY,
 } from "@/lib/removed-ids";
 
-/** Display row type */
-type Row = {
-  id: string;
-  slug?: string;
-  title: string;
-  /** "HH:MM-HH:MM" label only */
-  time: string;
-  /** "YYYY-MM-DD" */
-  date: string;
-  /** demo: quick flag */
-  isMine: boolean;
-};
+import type { CalendarEvent } from "@/types/calendar";
+import type { ActivityThumbnailResponse } from "@/types/activities";
+import type { DailyRow as Row } from "@/types/viewmodels";
 
-/** utils */
+/* ===================== Pure utils ===================== */
+
+const ADDED_IDS_KEY = "lifgear:added-ids";
+
+function toHm(iso: string) {
+  const t = new Date(iso);
+  const hh = String(t.getHours()).padStart(2, "0");
+  const mm = String(t.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function safeRangeHm(startISO: string, endISO?: string | null) {
+  const start = new Date(startISO);
+  const end = endISO ? new Date(endISO) : null;
+  if (isNaN(start.getTime())) return "—";
+  if (end && !isNaN(end.getTime())) return `${toHm(startISO)}-${toHm(endISO!)}`;
+  return `${toHm(startISO)}-—`;
+}
+
+function ymdFromISO(iso: string) {
+  return toYmdLocal(new Date(iso));
+}
+
+function readAddedIds(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(ADDED_IDS_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function dayStart(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+}
+function dayEnd(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+}
+
 const formatThaiDate = (d: Date) =>
   `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`;
 
+function formatThaiRangeFromISO(startISO: string, endISO: string) {
+  const s = new Date(startISO);
+  const e = new Date(endISO);
+  const sd = s.getDate();
+  const sm = THAI_MONTHS[s.getMonth()];
+  const sy = s.getFullYear() + 543;
+  const ed = e.getDate();
+  const em = THAI_MONTHS[e.getMonth()];
+  const ey = e.getFullYear() + 543;
+  return s.getFullYear() === e.getFullYear() && s.getMonth() === e.getMonth()
+    ? `${sd}–${ed} ${sm} ${sy}`
+    : `${sd} ${sm} ${sy} – ${ed} ${em} ${ey}`;
+}
 
-/** Mobile Accordion Item (เพิ่ม prop bgColor) */
-function AccordionItem({
-  ev,
+function rowBg(kind: Row["kind"], index: number) {
+  if (kind === "activity")
+    return index % 2 === 0 ? "bg-[#FFC26D]" : "bg-[#FF975E]";
+  return index % 2 === 0 ? "bg-[#8BD8FF]" : "bg-[#8CBAFF]";
+}
+
+/* ===================== MobileRow ===================== */
+const MobileRow = memo(function MobileRow({
+  row,
+  bgColor,
   onDelete,
-  bgColor, // เพิ่ม prop ใหม่
+  enableDelete = true,
 }: {
-  ev: Row;
-  onDelete?: (id: string) => void;
-  bgColor?: string; // เพิ่ม prop ใหม่
+  row: Row;
+  bgColor: string;
+  onDelete: (id: string) => void;
+  /** ปิด/เปิดปุ่มลบในมุมมองโมบาย */
+  enableDelete?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const d = parseYmd(ev.date);
+  const d = parseYmd(row.date);
+  const panelId = `row-panel-${row.id}`;
+  const btnId = `row-btn-${row.id}`;
 
   return (
     <div
-      className={`border rounded-md mb-3 overflow-hidden sm:hidden ${bgColor}`} //  ใช้ bgColor ที่ส่งเข้ามา
+      className={`border rounded-md mb-3 overflow-hidden sm:hidden ${bgColor}`}
     >
       <button
+        id={btnId}
         className="w-full px-4 py-3 bg-opacity-80 flex justify-between items-center font-semibold"
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={panelId}
       >
-        <span className="truncate">{ev.title}</span>
-        <span className="text-xl text-gray-700">
-          {open ? <IoChevronUp /> : <IoChevronDown />}
-        </span>
+        <span className="truncate">{row.title}</span>
+        <span className="text-xl text-gray-700">{open ? "▴" : "▾"}</span>
       </button>
 
       {open && (
-        <div className="px-4 py-2 bg-white space-y-2">
+        <div
+          id={panelId}
+          role="region"
+          aria-labelledby={btnId}
+          className="px-4 py-2 bg-white space-y-2"
+        >
           <p>
-            <span className="font-semibold">วัน:</span> {formatThaiDate(d)}
+            <span className="font-semibold">วัน: </span>
+            {formatThaiDate(d)}
           </p>
           <p>
-            <span className="font-semibold">เวลา:</span> {ev.time}
+            <span className="font-semibold">เวลา: </span>
+            {row.time}
           </p>
-          <div className="flex gap-2 mt-2">
-            <MoreInfoButton
-              href={ev.slug ? `/activity/${ev.slug}` : `/activity/${ev.id}`}
-              size="sm"
-              variant="primary"
-            />
-            {ev.isMine && onDelete && (
-              <DeleteButton
-                activityId={ev.id}
-                onDelete={() => onDelete(ev.id)}
-                size="sm"
-              />
-            )}
-          </div>
+
+          {/* ใช้ ActionCell เป็นที่เดียวกับเดสก์ท็อป */}
+          <DailyActionCell
+            row={row}
+            source="mine" // ✅
+            onDelete={(id: string) => onDelete(id)}
+            enableDelete={enableDelete}
+            size="sm"
+            align="start"
+          />
         </div>
       )}
     </div>
   );
-}
+});
 
+/* ===================== Page ===================== */
 export default function DailyPage() {
   const now = useNow(1000);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  // removed ids (shared w/ Monthly via localStorage)
-  const [removedIds, setRemovedIds] = useState<string[]>(() => readRemovedIds());
+  const [refreshTick, setRefreshTick] = useState(0);
+  useEffect(() => {
+    const handler = () => setRefreshTick((k) => k + 1);
+    window.addEventListener("lifgear:activity-added", handler);
+    return () => window.removeEventListener("lifgear:activity-added", handler);
+  }, []);
+
+  const [addedIds, setAddedIds] = useState<string[]>(() => readAddedIds());
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === REMOVED_IDS_KEY) setRemovedIds(readRemovedIds());
+      if (e.key === ADDED_IDS_KEY) setAddedIds(readAddedIds());
+      if (e.key === REMOVED_IDS_KEY) {
+        purgeExpired(1);
+        setRemovedIds(readRemovedIds());
+        setRemovedEntries(readRemovedEntries());
+      }
     };
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+
+    const onAdded = () => setAddedIds(readAddedIds());
+    window.addEventListener("lifgear:activity-added", onAdded);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("lifgear:activity-added", onAdded);
+    };
   }, []);
 
-  // map mock -> display rows
-  const events: Row[] = useMemo(() => {
-    const items = getAllActivities(now);
-    return items.map((a) => {
-      const d = new Date(a.startAt);
-      const e = new Date(a.endAt);
-      const sh = String(d.getHours()).padStart(2, "0");
-      const sm = String(d.getMinutes()).padStart(2, "0");
-      const eh = String(e.getHours()).padStart(2, "0");
-      const em = String(e.getMinutes()).padStart(2, "0");
-      return {
-        id: a.id,
-        slug: a.slug,
-        title: a.title,
-        time: `${sh}:${sm}-${eh}:${em}`,
-        date: toYmdLocal(d),
-        // demo logic only
-        isMine: a.title.startsWith("คาบเรียน") || a.status === "upcoming",
-      } satisfies Row;
-    });
-  }, [now]);
+  const dateStr = useMemo(() => {
+    const qs = (searchParams?.get("date") || "").trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(qs) ? qs : toYmdLocal(now);
+  }, [searchParams, now]);
 
-  // filter out removed
-  const visibleEvents = useMemo(
-    () => events.filter((ev) => !removedIds.includes(ev.id)),
-    [events, removedIds]
+  const setDateQuery = useCallback(
+    (nextYmd: string) => {
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      params.set("date", nextYmd);
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams]
   );
 
-  const isRegistered = useCallback((ev: Row) => ev.isMine, []);
-  const buildPath = useCallback(
-    (e: Row) => (e.slug ? `/activity/${e.slug}` : `/activity/${e.id}`),
+  const url = useMemo(() => {
+    const base = apiRoutes.getMyEveryDailyEvents(dateStr);
+    const sep = base.includes("?") ? "&" : "?";
+    return `${base}${sep}rt=${refreshTick}`;
+  }, [dateStr, refreshTick]);
+
+  const { loading, error, events } = useDailyEvents(dateStr, url);
+
+  const [removedIds, setRemovedIds] = useState<string[]>(() =>
+    readRemovedIds()
+  );
+  const [removedEntries, setRemovedEntries] = useState(() =>
+    readRemovedEntries()
+  );
+
+  const [showBin, setShowBin] = useState(false);
+
+  const purgeIvRef = useRef<number | null>(null);
+  useEffect(() => {
+    purgeExpired(1);
+    setRemovedIds(readRemovedIds());
+    setRemovedEntries(readRemovedEntries());
+
+    if (purgeIvRef.current) window.clearInterval(purgeIvRef.current);
+    purgeIvRef.current = window.setInterval(() => {
+      purgeExpired(1);
+      setRemovedIds(readRemovedIds());
+      setRemovedEntries(readRemovedEntries());
+    }, 15 * 60 * 1000);
+
+    return () => {
+      if (purgeIvRef.current) window.clearInterval(purgeIvRef.current);
+    };
+  }, []);
+
+  const handleDelete = useCallback(
+    (id: string, title?: string, kind?: Row["kind"]) => {
+      addRemovedEntry({ id, title, kind });
+      setRemovedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      setRemovedEntries(readRemovedEntries());
+    },
     []
   );
 
-  const myToday = useMemo(() => {
-    return visibleEvents
-      .filter((ev) => sameDay(parseYmd(ev.date), now) && isRegistered(ev))
-      .sort((a, b) => a.time.localeCompare(b.time));
-  }, [visibleEvents, now, isRegistered]);
-
-  const upcomingUnregistered = useMemo(() => {
-    const sodNow = startOfDay(now).getTime();
-    return visibleEvents
-      .filter((ev) => {
-        if (isRegistered(ev)) return false;
-        const d = parseYmd(ev.date);
-        const isToday = sameDay(d, now);
-        const isAfterToday = d.getTime() > sodNow;
-        if (isAfterToday) return true;
-        if (!isToday) return false;
-        const { start } = getRangeForDate(ev.date, ev.time, now);
-        return start.getTime() > now.getTime();
-      })
-      .sort((a, b) =>
-        a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)
-      );
-  }, [visibleEvents, now, isRegistered]);
-
-  // delete -> persist & optimistic UI
-  const handleDeleteFromMonthlyAndDaily = useCallback((id: string) => {
-    addRemovedId(id);
-    setRemovedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  const restoreOne = useCallback((id: string) => {
+    removeRemovedId(id);
+    setRemovedIds(readRemovedIds());
+    setRemovedEntries(readRemovedEntries());
   }, []);
 
-  return (
-    <main className="bg-[#f6f1e7] flex flex-col items-center p-6 min-h-screen">
-      <header className="w-full flex flex-col items-end text-[#730217] mb-6">
-        <h1 className="text-2xl sm:text-3xl font-semibold">ตารางชีวิตประจำวัน</h1>
-        <p className="font-bold text-xl sm:text-4xl">
-          <TimeLabel />
-        </p>
-      </header>
+  const restoreAll = useCallback(() => {
+    clearRemovedIds();
+    setRemovedIds([]);
+    setRemovedEntries([]);
+  }, []);
 
-      <div className="w-full max-w-5xl bg-black rounded-lg p-4">
+  const rows: Row[] = useMemo(
+    () =>
+      events.map((ev: CalendarEvent) => {
+        const startISO = ev.start_at;
+        const endISO = ev.end_at;
+        const start = new Date(startISO);
+        const end = new Date(endISO);
+
+        const safeTime =
+          isNaN(start.getTime()) || isNaN(end.getTime())
+            ? "—"
+            : `${toHm(startISO)}-${toHm(endISO)}`;
+
+        return {
+          id: ev.id,
+          title: ev.title,
+          time: safeTime,
+          date: ymdFromISO(startISO),
+          kind: ev.kind,
+          startISO,
+          endISO,
+        };
+      }),
+    [events]
+  );
+
+  const visible = useMemo(
+    () => rows.filter((r) => !removedIds.includes(r.id)),
+    [rows, removedIds]
+  );
+
+  const todayRows = useMemo(() => {
+    const selected = parseYmd(dateStr);
+    const S = dayStart(selected).getTime();
+    const E = dayEnd(selected).getTime();
+
+    const classes = visible
+      .filter((r) => r.kind === "class")
+      .sort((a, b) => a.time.localeCompare(b.time));
+
+    const actsInRange = visible
+      .filter((r) => r.kind === "activity")
+      .filter((r) => {
+        const st = new Date(r.startISO).getTime();
+        const en = new Date(r.endISO).getTime();
+        return st <= E && en >= S;
+      })
+      .sort((a, b) => a.time.localeCompare(b.time));
+
+    return [...classes, ...actsInRange];
+  }, [visible, dateStr]);
+
+  const [thumbsLoading, setThumbsLoading] = useState(true);
+  const [thumbsError, setThumbsError] = useState<string | null>(null);
+  const [upcomingThumbs, setUpcomingThumbs] = useState<
+    ActivityThumbnailResponse[]
+  >([]);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    async function loadUpcoming() {
+      setThumbsLoading(true);
+      setThumbsError(null);
+      try {
+        const url = `${apiRoutes.getAllActivitiesThumbnails}?status=upcoming`;
+        const res = await fetch(url, {
+          credentials: "include",
+          signal: ac.signal,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: ActivityThumbnailResponse[] = await res.json();
+        const onlyUpcoming = data.filter((a) => a.status === "upcoming");
+        setUpcomingThumbs(onlyUpcoming);
+      } catch (_e) {
+        try {
+          if (!ac.signal.aborted) {
+            const resAll = await fetch(apiRoutes.getAllActivitiesThumbnails, {
+              credentials: "include",
+              signal: ac.signal,
+            });
+            if (!resAll.ok) throw new Error(`HTTP ${resAll.status}`);
+            const allData: ActivityThumbnailResponse[] = await resAll.json();
+            setUpcomingThumbs(allData.filter((a) => a.status === "upcoming"));
+          }
+        } catch (err2: any) {
+          if (!ac.signal.aborted)
+            setThumbsError(err2?.message || "โหลดกิจกรรมแนะนำไม่สำเร็จ");
+        }
+      } finally {
+        if (!ac.signal.aborted) setThumbsLoading(false);
+      }
+    }
+    loadUpcoming();
+    return () => ac.abort();
+  }, [refreshTick]);
+
+  const upcomingRows = useMemo(() => {
+    const selected = parseYmd(dateStr);
+    const S = dayStart(selected).getTime();
+
+    const todayActivityIds = new Set(
+      todayRows.filter((r) => r.kind === "activity").map((r) => r.id)
+    );
+
+    const mapped: Row[] = upcomingThumbs.map((a) => ({
+      id: a.id,
+      title: a.title,
+      time: safeRangeHm(a.start_at, a.end_at ?? null),
+      date: ymdFromISO(a.start_at),
+      kind: "activity",
+      startISO: a.start_at,
+      endISO: a.end_at ?? a.start_at,
+      slug: a.slug,
+      status: a.status,
+    }));
+
+    return mapped
+      .filter((r) => new Date(r.endISO || r.startISO).getTime() >= S)
+      .filter((r) => !todayActivityIds.has(r.id))
+      .filter((r) => !addedIds.includes(r.id))
+      .sort(
+        (a, b) =>
+          new Date(a.startISO).getTime() - new Date(b.startISO).getTime() ||
+          a.title.localeCompare(b.title)
+      );
+  }, [upcomingThumbs, dateStr, todayRows, addedIds]);
+
+  return (
+    <main className="bg-[#f6f1e7] min-h-screen">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <header className="w-full text-main mb-6 text-center">
+          <h1 className="text-2xl sm:text-3xl font-semibold">
+            ตารางชีวิตประจำวัน
+          </h1>
+          <p className="font-bold text-xl sm:text-4xl">
+            <TimeLabel />
+          </p>
+          <div className="w-full mt-3">
+            <DateNav value={dateStr} onChange={setDateQuery} />
+          </div>
+        </header>
+
+        {/* กล่องหลัก */}
         <section className="bg-white rounded-md p-6">
-          {/* ===== Desktop Table: ของฉัน ===== */}
-          <div className="hidden sm:grid mb-2 grid-cols-[25%_25%_25%_25%] items-center">
-            <h2 className="font-bold text-xl sm:text-2xl text-black text-center">กิจกรรมของฉัน</h2>
-            <span className="font-bold text-xl sm:text-2xl text-black text-center">กำหนดการ</span>
-            <span className="font-bold text-xl sm:text-2xl text-black text-center">ระยะเวลา</span>
-            <span className="font-bold text-xl sm:text-2xl text-black text-center">ดำเนินการ</span>
+          {/* Loading / Error */}
+          {loading && (
+            <div className="text-center py-8 text-gray-500">
+              กำลังโหลดข้อมูล…
+            </div>
+          )}
+          {!loading && error && (
+            <div className="text-center py-8 text-red-600">
+              โหลดข้อมูลไม่สำเร็จ: {error}
+            </div>
+          )}
+
+          {/* Header (Desktop) */}
+          <div className="hidden sm:grid grid-cols-4 font-semibold text-black mb-2 normal-text">
+            <div className="text-center text-[#B30000]">กิจกรรมของฉัน</div>
+            <div className="text-center">กำหนดการ</div>
+            <div className="text-center">ระยะเวลา</div>
+            <div className="text-center">ดำเนินการ</div>
           </div>
 
-          <table className="hidden sm:table w-full text-sm table-fixed border-collapse overflow-hidden">
-            <tbody>
-              {myToday.length === 0 ? (
-                <tr>
-                  <td className="p-4 text-center text-gray-500" colSpan={4}>
-                    ยังไม่มีกิจกรรมของฉันในวันนี้
-                  </td>
-                </tr>
-              ) : (
-                myToday.map((ev, idx) => {
-                  const d = parseYmd(ev.date);
-                  return (
-                    <tr
-                      key={ev.id}
-                      className={`${idx % 2 === 0 ? "bg-[#FFC26D]" : "bg-[#FF975E]"} hover:brightness-105 transition`}
-                    >
-                      <td className="p-3 border font-medium text-center">
-                        <Link href={buildPath(ev)} className="hover:underline truncate">
-                          {ev.title}
-                        </Link>
-                      </td>
-                      <td className="p-3 border text-center">
-                        <time>{formatThaiDate(d)}</time>
-                      </td>
-                      <td className="p-3 border text-center">
-                        <time>{ev.time}</time>
-                      </td>
-                      <td className="p-3 border text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <MoreInfoButton href={buildPath(ev)} size="sm" variant="primary" />
-                          <DeleteButton
-                            activityId={ev.id}
-                            onDelete={handleDeleteFromMonthlyAndDaily}
-                            size="sm"
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-
-          {/* Mobile Accordion: ของฉัน */}
-          <div className="sm:hidden mt-4">
-            <h2 className="font-bold text-xl text-black mb-2">กิจกรรมของฉัน</h2>
-            {myToday.length === 0 ? (
-              <p className="text-gray-500 text-center">
-                ยังไม่มีกิจกรรมของฉันในวันนี้
-              </p>
+          {/* Rows (Desktop) */}
+          <div className="hidden sm:grid gap-2">
+            {!loading && todayRows.length === 0 ? (
+              <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
+                ยังไม่มีรายการในวันนี้
+              </div>
             ) : (
-              myToday.map((ev, idx) => (
-                <AccordionItem
-                  key={ev.id}
-                  ev={ev}
-                  onDelete={handleDeleteFromMonthlyAndDaily}
-                  bgColor={idx % 2 === 0 ? "bg-[#FFC26D]" : "bg-[#FF975E]"} // เพิ่มเพื่อให้สีเหมือน desktop
-                />
-              ))
+              todayRows.map((ev, idx) => {
+                const d = parseYmd(ev.date);
+                const bg = rowBg(ev.kind, idx);
+                const sameDay =
+                  ymdFromISO(ev.startISO) === ymdFromISO(ev.endISO);
+                const scheduleLabel = sameDay
+                  ? formatThaiDate(d)
+                  : formatThaiRangeFromISO(ev.startISO, ev.endISO);
+                return (
+                  <div
+                    key={ev.id}
+                    className={`grid grid-cols-4 items-center rounded-md ${bg} hover:brightness-105 transition`}
+                  >
+                    <div className="p-3 text-center font-medium truncate">
+                      {ev.title}
+                    </div>
+                    <div className="p-3 text-center">
+                      <time>{scheduleLabel}</time>
+                    </div>
+                    <div className="p-3 text-center">
+                      <time>{ev.time}</time>
+                    </div>
+                    <div className="p-3">
+                      <DailyActionCell
+                        row={ev}
+                        source="mine" // ✅ บอกว่ามาจากของฉัน
+                        onDelete={(id: string) =>
+                          handleDelete(id, ev.title, ev.kind)
+                        }
+                        enableDelete={true}
+                        size="sm"
+                        align="center"
+                      />
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
 
-          {/* ===== Desktop Table: กิจกรรมเร็ว ๆ นี้ ===== */}
+          {/* Rows (Mobile Accordion) */}
+          <div className="sm:hidden mt-4">
+            {loading ? (
+              <p className="text-gray-500 text-center">กำลังโหลดข้อมูล…</p>
+            ) : todayRows.length === 0 ? (
+              <p className="text-gray-500 text-center">
+                ยังไม่มีรายการในวันนี้
+              </p>
+            ) : (
+              <>
+                <h2 className="text-center text-[#B30000] font-semibold mb-2">
+                  กิจกรรมของฉัน
+                </h2>
+                <ul role="list" className="space-y-0">
+                  {todayRows.map((ev, idx) => (
+                    <li key={ev.id}>
+                      <MobileRow
+                        row={ev}
+                        onDelete={(id) => handleDelete(id, ev.title, ev.kind)}
+                        bgColor={rowBg(ev.kind, idx)}
+                        enableDelete={true} // โมบายของฉัน: ลบได้
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+
+          {/* ===== ตารางล่าง: กิจกรรมหลังจากวันนั้น ===== */}
           <div className="w-full mt-10">
-            <div className="hidden sm:grid mb-2 grid-cols-[25%_25%_25%_25%] items-center">
-              <h2 className="font-bold text-xl sm:text-2xl text-black text-center">กิจกรรมเร็ว ๆ นี้</h2>
-              <span className="font-bold text-xl sm:text-2xl text-black text-center">กำหนดการ</span>
-              <span className="font-bold text-xl sm:text-2xl text-black text-center">ระยะเวลา</span>
-              <span className="font-bold text-xl sm:text-2xl text-black text-center">ดำเนินการ</span>
+            <div className="hidden sm:grid grid-cols-4 font-semibold text-black mb-2 normal-text">
+              <div className="text-center text-[#B30000]">กิจกรรมแนะนำ</div>
+              <div className="text-center">กำหนดการ</div>
+              <div className="text-center">ระยะเวลา</div>
+              <div className="text-center">ดำเนินการ</div>
             </div>
 
-            {/* Desktop Table */}
-            <table className="hidden sm:table w-full text-sm table-fixed border-collapse overflow-hidden">
-              <colgroup>
-                <col style={{ width: "25%" }} />
-                <col style={{ width: "25%" }} />
-                <col style={{ width: "25%" }} />
-                <col style={{ width: "25%" }} />
-              </colgroup>
-              <thead className="sr-only">
-                <tr>
-                  <th>ชื่อกิจกรรม</th>
-                  <th>วัน</th>
-                  <th>เวลา</th>
-                  <th>ดำเนินการ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {upcomingUnregistered.length === 0 ? (
-                  <tr>
-                    <td className="p-4 text-center text-gray-500" colSpan={4}>
-                      ยังไม่มีกิจกรรมที่ยังไม่ได้ลงทะเบียน
-                    </td>
-                  </tr>
-                ) : (
-                  upcomingUnregistered.map((ev, idx) => {
-                    const d = parseYmd(ev.date);
-                    return (
-                      <tr
-                        key={ev.id}
-                        className={`${idx % 2 === 0 ? "bg-[#8BD8FF]" : "bg-[#8CBAFF]"} hover:brightness-105 transition`}
-                      >
-                        <td className="p-3 border text-center">
-                          <Link href={buildPath(ev)} className="hover:underline truncate">
-                            {ev.title}
-                          </Link>
-                        </td>
-                        <td className="p-3 border text-center">
-                          <time>{formatThaiDate(d)}</time>
-                        </td>
-                        <td className="p-3 border text-center">
-                          <time>{ev.time}</time>
-                        </td>
-                        <td className="p-3 border text-center">
-                          {/* NOTE: avoid nesting interactive elements */}
-                          <MoreInfoButton href={buildPath(ev)} size="sm" variant="primary" />
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+            {/* Desktop */}
+            <div className="hidden sm:grid gap-2">
+              {!thumbsLoading && thumbsError && (
+                <div className="text-center text-red-600 p-4 bg-red-50 rounded-lg">
+                  {thumbsError}
+                </div>
+              )}
 
-            {/* Mobile : กิจกรรมเร็ว ๆ นี้ */}
-            <div className="sm:hidden mt-4">
-              <h2 className="font-bold text-xl text-black mb-2">กิจกรรมเร็ว ๆ นี้</h2>
-              {upcomingUnregistered.length === 0 ? (
-                <p className="text-gray-500 text-center">
-                  ยังไม่มีกิจกรรมที่ยังไม่ได้ลงทะเบียน
-                </p>
+              {thumbsLoading ? (
+                <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
+                  กำลังโหลดกิจกรรมแนะนำ…
+                </div>
+              ) : upcomingRows.length === 0 ? (
+                <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
+                  ยังไม่มีกิจกรรมหลังจากวันนี้
+                </div>
               ) : (
-                upcomingUnregistered.map((ev, idx) => (
-                  <AccordionItem
-                    key={ev.id}
-                    ev={ev}
-                    bgColor={idx % 2 === 0 ? "bg-[#8BD8FF]" : "bg-[#8CBAFF]"} // 💙 ใช้สีฟ้าเหมือน desktop
-                  />
-                ))
+                upcomingRows.map((ev, idx) => {
+                  const d = parseYmd(ev.date);
+                  const bg = rowBg("activity", idx);
+                  const sameDay =
+                    ymdFromISO(ev.startISO) === ymdFromISO(ev.endISO);
+                  const scheduleLabel = sameDay
+                    ? formatThaiDate(d)
+                    : formatThaiRangeFromISO(ev.startISO, ev.endISO);
+
+                  return (
+                    <div
+                      key={ev.id}
+                      className={`grid grid-cols-4 items-center rounded-md ${bg} hover:brightness-105 transition`}
+                    >
+                      <div className="p-3 text-center font-medium truncate">
+                        {ev.title}
+                      </div>
+                      <div className="p-3 text-center">
+                        <time>{scheduleLabel}</time>
+                      </div>
+                      <div className="p-3 text-center">
+                        <time>{ev.time}</time>
+                      </div>
+                      <div className="p-3">
+                        <DailyActionCell
+                          row={ev}
+                          enableDelete={false} // “กิจกรรมแนะนำ” ไม่ให้ลบ
+                          size="sm"
+                          align="center"
+                        />
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
+
+          {/* Mobile: กิจกรรมแนะนำ */}
+          <div className="sm:hidden mt-4">
+            {!thumbsLoading && thumbsError && (
+              <p className="text-center text-red-600">{thumbsError}</p>
+            )}
+
+            {thumbsLoading ? (
+              <p className="text-gray-500 text-center">
+                กำลังโหลดกิจกรรมแนะนำ…
+              </p>
+            ) : upcomingRows.length === 0 ? (
+              <p className="text-gray-500 text-center">
+                ยังไม่มีกิจกรรมหลังจากวันนี้
+              </p>
+            ) : (
+              <>
+                <h2 className="text-center text-[#B30000] font-semibold mb-2">
+                  กิจกรรมแนะนำ
+                </h2>
+                <ul role="list" className="space-y-0">
+                  {upcomingRows.map((ev, idx) => {
+                    return (
+                      <li key={ev.id}>
+                        <MobileRow
+                          row={ev}
+                          onDelete={(id: string) =>
+                            handleDelete(id, ev.title, ev.kind)
+                          }
+                          bgColor={rowBg("activity", idx)}
+                          enableDelete={false}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
+          </div>
+
+          {/* ถังรีไซเคิล */}
+          <div className="mt-6 w-full flex sm:justify-end">
+            <RecycleBinWidget
+              entries={removedEntries}
+              loading={loading}
+              onRestoreOne={restoreOne}
+              onRestoreAll={restoreAll}
+              show={showBin}
+              onToggle={setShowBin}
+              className="w-full sm:w-auto"
+              title="แสดงรายการที่ถูกลบ"
+            />
+          </div>
         </section>
       </div>
-
     </main>
   );
 }

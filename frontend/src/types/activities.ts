@@ -1,3 +1,5 @@
+// types/activities.ts
+
 import { ActivityCategory, ActivityStatus } from "@/lib/enums/activity";
 export type User = {
   username: string;

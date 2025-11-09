@@ -1,3 +1,4 @@
+// app/(home)/monthly/page.tsx
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -29,25 +30,41 @@ import type { CalendarEvent } from "@/types/calendar";
 function sameYmd(a: Date, y: number, m0: number, d: number) {
   return a.getFullYear() === y && a.getMonth() === m0 && a.getDate() === d;
 }
-
 function getInitialSelectedDay(today: Date, y: number, m0: number) {
   return sameYmd(today, y, m0, today.getDate()) ? today.getDate() : null;
 }
 
-function buildEventsByDayForMonth(
+/** กระจายกิจกรรมตามช่วง start–end ให้ลงทุกวันในเดือนนั้น (inclusive) */
+function buildEventsByDayForMonthRange(
   events: CalendarEvent[],
   year: number,
   month0: number
 ) {
   const map: Record<number, CalendarEvent[]> = {};
+
   for (const ev of events) {
-    if (!ev.start_at) continue;
-    const ymd = ymdInBangkok(ev.start_at);
-    if (!ymd) continue;
-    const { y, m0, d } = ymd;
-    if (y !== year || m0 !== month0) continue;
-    (map[d] ??= []).push(ev);
+    if (!ev.start_at || !ev.end_at) continue;
+
+    const s = ymdInBangkok(ev.start_at);
+    const e = ymdInBangkok(ev.end_at);
+    if (!s || !e) continue;
+
+    let cur = new Date(s.y, s.m0, s.d);
+    const end = new Date(e.y, e.m0, e.d);
+
+    while (cur.getTime() <= end.getTime()) {
+      const cy = cur.getFullYear();
+      const cm0 = cur.getMonth();
+      const cd = cur.getDate();
+
+      if (cy === year && cm0 === month0) {
+        (map[cd] ??= []).push(ev);
+      }
+      cur = new Date(cy, cm0, cd + 1);
+    }
   }
+
+  // sort: class ก่อน activity แล้วตามเวลาเริ่ม
   for (const d in map) {
     map[d].sort((a, b) => {
       const ak = a.kind === "class" ? 0 : 1;
@@ -66,10 +83,10 @@ function buildEventsByDayForMonth(
 
 /* =============== Page =============== */
 export default function MonthlyPage() {
-  // ใช้ ref เพื่อคง "today" ตลอดการเรนเดอร์ของเพจ
+  // today (คงค่าตลอด Lifecycle)
   const todayRef = useRef(new Date());
 
-  // anchor ที่วันแรกของเดือน (คุมเดือน/ปี)
+  // anchor: วันแรกของเดือน (ควบคุมเดือน/ปี)
   const [anchorDate, setAnchorDate] = useState<Date>(() => {
     const t = todayRef.current;
     return new Date(t.getFullYear(), t.getMonth(), 1);
@@ -80,13 +97,21 @@ export default function MonthlyPage() {
     [anchorDate]
   );
 
-  // recycle bin state
+  // รีเฟรชเมื่อมีการ Add จากที่อื่น
+  const [refreshTick, setRefreshTick] = useState(0);
+  useEffect(() => {
+    const handler = () => setRefreshTick((k) => k + 1);
+    window.addEventListener("lifgear:activity-added", handler);
+    return () => window.removeEventListener("lifgear:activity-added", handler);
+  }, []);
+
+  // Recycle bin state
   const [removedIds, setRemovedIds] = useState<string[]>(() =>
     readRemovedIds()
   );
   const [showBin, setShowBin] = useState(false);
 
-  // วันที่ถูกเลือก (default: วันนี้ถ้าอยู่เดือนเดียวกัน)
+  // selected day (default: วันนี้ถ้าอยู่เดือนเดียวกัน)
   const [selectedDay, setSelectedDay] = useState<number | null>(() =>
     getInitialSelectedDay(todayRef.current, year, month0)
   );
@@ -94,7 +119,7 @@ export default function MonthlyPage() {
     setSelectedDay(getInitialSelectedDay(todayRef.current, year, month0));
   }, [year, month0]);
 
-  // sync removedIds เมื่อ localStorage จาก tab อื่นเปลี่ยน
+  // sync removedIds จาก tab อื่น
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === REMOVED_IDS_KEY) setRemovedIds(readRemovedIds());
@@ -103,18 +128,19 @@ export default function MonthlyPage() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  // calendar grid
+  // Calendar grid
   const calendar = useMemo(
     () => generateCalendarGrid(year, month0, { weekStartsOn: 1 }),
     [year, month0]
   );
 
-  // fetch events ของเดือนนั้น
-  const ym = `${year}-${String(month0 + 1).padStart(2, "0")}`;
-  const url = `${apiRoutes.getMyMonthlyEvents}?ym=${ym}`;
+  // ==== เรียก API รูปแบบใหม่: baseapi/calendar/monthly/YYYY-MM-DD (ส่งวันแรกของเดือน) ====
+  const firstYmd = `${year}-${String(month0 + 1).padStart(2, "0")}-01`;
+  const url = `${apiRoutes.getMyMonthlyEvents}/${firstYmd}?rt=${refreshTick}`;
+
   const { loading, error, events } = useMonthlyEvents(year, month0, url);
 
-  // กรองรายการที่ถูกซ่อนไว้ในถัง
+  // ซ่อนรายการที่ถูกลบ
   const visibleEvents = useMemo<CalendarEvent[]>(
     () =>
       (events as CalendarEvent[])
@@ -133,6 +159,7 @@ export default function MonthlyPage() {
     [events, removedIds]
   );
 
+  // สำหรับแสดงในถัง (ถ้าคุณมี UI ส่วนนี้)
   const removedEventsThisMonth = useMemo<CalendarEvent[]>(() => {
     return (events as CalendarEvent[]).filter((e) => {
       if (!removedIds.includes(e.id)) return false;
@@ -142,8 +169,9 @@ export default function MonthlyPage() {
     });
   }, [events, removedIds, year, month0]);
 
+  // สร้าง map: วัน -> กิจกรรม (กระจายตามช่วง start–end)
   const eventsByDay = useMemo(
-    () => buildEventsByDayForMonth(visibleEvents, year, month0),
+    () => buildEventsByDayForMonthRange(visibleEvents, year, month0),
     [visibleEvents, year, month0]
   );
 
@@ -154,16 +182,6 @@ export default function MonthlyPage() {
       ),
     []
   );
-
-  const restoreAll = useCallback(() => {
-    clearRemovedIds();
-    setRemovedIds([]);
-  }, []);
-
-  const restoreOne = useCallback((id: string) => {
-    removeRemovedId(id);
-    setRemovedIds((prev) => prev.filter((x) => x !== id));
-  }, []);
 
   const isSameYmdMemo = useCallback(
     (day: number) => sameYmd(todayRef.current, year, month0, day),
@@ -199,7 +217,6 @@ export default function MonthlyPage() {
             >
               {monthLabel}
             </div>
-
             <IconButton ariaLabel="เดือนถัดไป" onClick={() => changeMonth(1)}>
               <IoMdArrowDroprightCircle className="h-6 w-6 sm:h-7 sm:w-7" />
             </IconButton>
@@ -207,10 +224,9 @@ export default function MonthlyPage() {
         </div>
       </header>
 
-      {/* Layout: ทำให้คอลัมน์สูงเท่ากันโดย default ของ CSS Grid (stretch) + ใส่ items-stretch ชัดเจน */}
-
+      {/* Layout */}
       <div className="w-full mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
-        {/* Calendar (คงขนาดเดิมทุกอย่าง) */}
+        {/* Calendar */}
         <section className="lg:col-span-3">
           {loading ? (
             <div
@@ -245,7 +261,7 @@ export default function MonthlyPage() {
           )}
         </section>
 
-        {/* Sidebar: ยืดสูงเท่ากับ track เดียวกันของ grid */}
+        {/* Sidebar */}
         <aside
           className="bg-white rounded-4xl shadow-[0_4px_12px_rgba(0,0,0,0.08)]
                      p-4 sm:p-6 flex flex-col min-h-full"
@@ -273,6 +289,7 @@ export default function MonthlyPage() {
               />
             )}
           </div>
+
           {/* ปุ่มล่างสุด */}
           <div className="mt-auto" />
           <Link

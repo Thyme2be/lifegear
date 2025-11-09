@@ -1,3 +1,5 @@
+// lib/eums/activies
+
 export enum ActivityStatus {
   Upcoming = "upcoming",
   Running = "running",

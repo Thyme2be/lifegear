@@ -1,7 +1,8 @@
+// app/(home)/activity/[activityId]/ActivityDetails.tsx
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import ContactInfoView from "@/components/contactInfo";
 import { formatDateThaiFromIso, formatTimeThaiFromIso } from "@/lib/datetime";
 import { apiRoutes } from "@/lib/apiRoutes";
@@ -14,7 +15,6 @@ import type { ActivityDetailResponse } from "@/types/activities";
 
 const FALLBACK_IMG = "/fallback_activity.png";
 
-/* label/value บรรทัดข้อมูล */
 function InfoRow({
   label,
   children,
@@ -30,21 +30,24 @@ function InfoRow({
   );
 }
 
-/* ===================== Main Component ===================== */
 export default function ActivityDetails({ activityId }: { activityId: string }) {
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromMine = (searchParams.get("src") ?? "") === "mine";
+
+  // ✅ กัน double-encoding เช่น .../%2520... ด้วยการ decode ก่อน
+  const normalizedId = useMemo(() => decodeURIComponent(activityId), [activityId]);
 
   const [data, setData] = useState<ActivityDetailResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [reloadKey, setReloadKey] = useState(0); // ใช้สำหรับกด "ลองใหม่"
+  const [reloadKey, setReloadKey] = useState(0);
 
   const fetchActivity = useCallback(
     async (signal: AbortSignal) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(apiRoutes.getActivityById(activityId), {
+        const res = await fetch(apiRoutes.getActivityById(normalizedId), {
           credentials: "include",
           cache: "no-store",
           signal,
@@ -52,6 +55,14 @@ export default function ActivityDetails({ activityId }: { activityId: string }) 
         });
 
         if (!res.ok) {
+          // แยก 404 เป็น not-found ให้ UI แสดงเพจไม่พบ
+          if (res.status === 404) {
+            if (!signal.aborted) {
+              setData(null);
+              setError(null);
+            }
+            return;
+          }
           throw new Error(`HTTP ${res.status} ${res.statusText}`);
         }
 
@@ -66,7 +77,7 @@ export default function ActivityDetails({ activityId }: { activityId: string }) 
         if (!signal.aborted) setLoading(false);
       }
     },
-    [activityId]
+    [normalizedId]
   );
 
   useEffect(() => {
@@ -75,11 +86,8 @@ export default function ActivityDetails({ activityId }: { activityId: string }) 
     return () => controller.abort();
   }, [fetchActivity, reloadKey]);
 
-  const handleRetry = useCallback(() => {
-    setReloadKey((k) => k + 1);
-  }, []);
+  const handleRetry = useCallback(() => setReloadKey((k) => k + 1), []);
 
-  /* ===================== Derived values ===================== */
   const { title, imgSrc, dateText, timeText } = useMemo(() => {
     const title = data?.title || "ไม่มีชื่อกิจกรรม";
     const imgSrc = data?.image_path || FALLBACK_IMG;
@@ -100,10 +108,8 @@ export default function ActivityDetails({ activityId }: { activityId: string }) 
     return { title, imgSrc, dateText, timeText };
   }, [data]);
 
-  /* ===================== Render states ===================== */
-  if (loading && !data) {
-    return <SubActivityLoading />;
-  }
+  // ===== Render states =====
+  if (loading && !data) return <SubActivityLoading />;
 
   if (error) {
     return (
@@ -121,7 +127,7 @@ export default function ActivityDetails({ activityId }: { activityId: string }) 
     );
   }
 
-  /* ===================== Render ===================== */
+  // ===== Render =====
   return (
     <section className="max-w-3xl mx-auto bg-white rounded-[28px] shadow-2xl p-6 sm:p-10 ">
       <h1 className="text-2xl sm:text-3xl font-extrabold text-main tracking-tight mb-6">
@@ -137,7 +143,6 @@ export default function ActivityDetails({ activityId }: { activityId: string }) 
           className="object-cover"
           priority
           placeholder="blur"
-          // ใส่ data uri เล็ก ๆ กัน layout shift (จะปรับทีหลังก็ได้)
           blurDataURL="data:image/gif;base64,R0lGODlhAQABAAAAACw="
         />
       </div>
@@ -173,13 +178,12 @@ export default function ActivityDetails({ activityId }: { activityId: string }) 
 
       <div className="flex flex-col sm:flex-row justify-end gap-4">
         <AddToLifeButton
-          activityId={activityId}
+          activityId={normalizedId}           
+          startAt={data.start_at ?? undefined}
+          endAt={data.end_at ?? undefined}
+          forceDisabled={fromMine}  
           onDone={() => {
-            // ให้ Daily/Monthly ที่อยู่ที่อื่นรีเฟรชข้อมูล
-            router.refresh();
-            // ถ้าใช้ SWR ในหน้า calendar:
-            // mutate('/api/calendar/daily');
-            // mutate('/api/calendar/monthly');
+            /* ตามเดิม */
           }}
         />
       </div>
