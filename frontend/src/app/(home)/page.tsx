@@ -16,11 +16,11 @@ export default function Home() {
       <BannerSliderWrapper />
 
       {/* Welcome Section */}
-      <article className="p-6 sm:p-10 my-10 max-w-4xl mx-auto text-center ">
+      <article className="p-6 sm:p-10 my-10 max-w-5xl mx-auto text-center ">
         <h1 className="heading mb-4 text-center text-main">
           ขอต้อนรับเข้าสู่เว็บไซต์ <span className="text-black">LifeGear</span>
         </h1>
-        <p className="mb-10 leading-relaxed whitespace-pre-line text-sm text-secondary sm:text-base">
+        <p className="mb-10 leading-relaxed whitespace-pre-line text-md text-secondary sm:text-xl">
           &quot;...หมดปัญหาสับสนเรื่องตารางเรียนหรือกิจกรรมคณะ! LifeGear ช่วยจัดระเบียบชีวิตนักศึกษาวิศวะให้ลงตัว <br />
           ด้วยระบบปฏิทินรายเดือนที่รวมทุกอย่างไว้ครบ ทั้งตารางเรียน กิจกรรม และการเพิ่มกิจกรรมส่วนตัว ใช้งานสะดวก <br />
           ครบจบในเว็บเดียว...&quot;

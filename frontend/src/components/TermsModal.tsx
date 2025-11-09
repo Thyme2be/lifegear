@@ -11,7 +11,7 @@ const TermsModal = () => {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-blue-700 hover:underline decoration-2 ml-0.5 cursor-pointer"
+        className="text-blue-700 underline decoration-2 ml-0.5 cursor-pointer"
       >
         อ่านเพิ่มเติม
       </button>

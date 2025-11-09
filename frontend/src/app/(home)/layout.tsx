@@ -17,7 +17,10 @@ export default function RootLayout({
     <section lang="th">
       <div className={`${notoSerifThai.className} antialiased`}>
         <TopBar />
-        {children}
+        {/* เพิ่ม padding-top เผื่อพื้นที่ nav bar */}
+        <div className="pt-20">
+          {children}
+        </div>
         <Footer />
       </div>
     </section>
