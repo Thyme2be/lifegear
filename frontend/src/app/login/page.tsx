@@ -30,13 +30,13 @@ export default function Page() {
   return (
     <main className="min-h-screen w-full bg-[url('/background_login2.png')] bg-no-repeat bg-cover bg-center flex items-center justify-center p-4 sm:p-45 relative">
       {/* Header */}
-      <header className="absolute top-0 left-0 w-full px-4 sm:px-10 py-5 flex items-center z-[99]">
+      <header className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 w-full px-4 sm:px-10 py-0 flex justify-center items-center z-[99]">
         <Image
           src="/logo.png"
           alt="LifeGear Logo"
           width={250}
           height={250}
-          className="object-contain w-[180px] sm:w-[250px] md:w-[300px]"
+          className="object-contain w-[250px] sm:w-[350px] md:w-[400px]"
         />
       </header>
 

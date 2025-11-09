@@ -12,7 +12,7 @@ function SampleNextArrow(props: CustomArrowProps) {
   return (
     <button
       onClick={onClick}
-      className="absolute -right-10 sm:-right-14 md:-right-20
+      className="absolute right-2 sm:-right-8 md:-right-10
                  top-1/2 -translate-y-1/2 
                  text-2xl sm:text-4xl lg:text-5xl 
                  cursor-pointer z-30"
@@ -27,7 +27,7 @@ function SamplePrevArrow(props: CustomArrowProps) {
   return (
     <button
       onClick={onClick}
-      className="absolute -left-10 sm:-left-14 md:-left-20
+      className="absolute left-2 sm:-left-8 md:-left-10
                  top-1/2 -translate-y-1/2 
                  text-2xl sm:text-4xl lg:text-5xl 
                  cursor-pointer z-30"
