@@ -27,8 +27,6 @@ export default function DailyActionCell({
   const showMoreInfo = row.kind === "activity";
   const showDelete = enableDelete;
 
-  // ✅ ใช้ id เสมอ (หรือ linkId ถ้าอยาก override) และเข้ารหัสพาธ
-  const targetIdRaw = linkId ?? row.id;
   const targetId = encodeURIComponent(linkId ?? row.id);
   const href =
     row.kind === "activity"

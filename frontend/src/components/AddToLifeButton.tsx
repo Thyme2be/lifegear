@@ -49,24 +49,42 @@ export default function AddToLifeButton({
   onDone?: (id: string) => void;
   forceDisabled?: boolean;
 }) {
-  const router = useRouter(); // ✅ เพิ่ม
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const now = new Date();
   const start = startAt ? new Date(startAt) : undefined;
   const end = endAt ? new Date(endAt) : undefined;
-  const isPast = end ? now > end : start ? now > start : false;
-  const isOngoing = start && end ? now >= start && now <= end : false;
+
+  const startValid = !startAt || !Number.isNaN(start?.valueOf());
+  const endValid = !endAt || !Number.isNaN(end?.valueOf());
+
+  const isPast =
+    endValid && end
+      ? now > end
+      : startValid && start
+      ? now > start
+      : false;
+
+  const isOngoing =
+    startValid && endValid && start && end ? now >= start && now <= end : false;
+
   const disabled = forceDisabled || loading || (isPast && !isOngoing);
 
   const handleAdd = useCallback(async () => {
     if (forceDisabled) return;
+
     if (!activityId) return alert("ไม่พบรหัสกิจกรรม");
 
     const normalizedId = decodeURIComponent(activityId.trim());
     if (!UUID_RE.test(normalizedId)) {
       alert("รหัสกิจกรรมไม่ถูกต้อง (ต้องเป็น UUID)");
       return;
+    }
+
+    if (!startValid || !endValid) {
+      // ไม่บล็อกการเพิ่ม แต่แจ้งเตือนผู้ใช้
+      console.warn("start/end ไม่เป็นวันที่ที่ถูกต้อง:", { startAt, endAt });
     }
 
     if (isPast && !isOngoing)
@@ -88,6 +106,7 @@ export default function AddToLifeButton({
 
       const text = await res.text().catch(() => "");
       const data = parseJsonSafe<ErrorBody>(text);
+
       if (res.status === 401) throw new Error("กรุณาเข้าสู่ระบบก่อน");
       if (res.status === 409) throw new Error("คุณได้บันทึกกิจกรรมนี้ไว้แล้ว");
       if (res.status === 422) throw new Error("ข้อมูลไม่ครบถ้วน (activity_id)");
@@ -103,7 +122,7 @@ export default function AddToLifeButton({
       alert("เพิ่มลงตารางชีวิตสำเร็จ 🎉");
       onDone?.(normalizedId);
 
-      // ✅ เปลี่ยนเส้นทางไป canonical URL แบบ id เสมอ แล้ว refresh
+      // เปลี่ยนเส้นทางไป canonical URL แล้ว refresh
       router.replace(`/activity/${normalizedId}`);
       router.refresh();
     } catch (e) {
@@ -112,7 +131,18 @@ export default function AddToLifeButton({
     } finally {
       setLoading(false);
     }
-  }, [activityId, isPast, isOngoing, onDone, router]);
+  }, [
+    activityId,
+    forceDisabled, // ✅ เพิ่ม dependency ที่หายไป
+    isPast,
+    isOngoing,
+    onDone,
+    router,
+    startAt, // เผื่อใช้ใน warning log
+    endAt,   // เผื่อใช้ใน warning log
+    startValid,
+    endValid,
+  ]);
 
   return (
     <button

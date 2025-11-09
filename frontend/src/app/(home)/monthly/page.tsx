@@ -14,8 +14,6 @@ import {
 } from "@/lib/datetime";
 import {
   readRemovedIds,
-  removeRemovedId,
-  clearRemovedIds,
   REMOVED_IDS_KEY,
 } from "@/lib/removed-ids";
 
@@ -109,8 +107,6 @@ export default function MonthlyPage() {
   const [removedIds, setRemovedIds] = useState<string[]>(() =>
     readRemovedIds()
   );
-  const [showBin, setShowBin] = useState(false);
-
   // selected day (default: วันนี้ถ้าอยู่เดือนเดียวกัน)
   const [selectedDay, setSelectedDay] = useState<number | null>(() =>
     getInitialSelectedDay(todayRef.current, year, month0)
@@ -158,16 +154,6 @@ export default function MonthlyPage() {
         }),
     [events, removedIds]
   );
-
-  // สำหรับแสดงในถัง (ถ้าคุณมี UI ส่วนนี้)
-  const removedEventsThisMonth = useMemo<CalendarEvent[]>(() => {
-    return (events as CalendarEvent[]).filter((e) => {
-      if (!removedIds.includes(e.id)) return false;
-      const ymd = ymdInBangkok(e.start_at);
-      if (!ymd) return false;
-      return ymd.y === year && ymd.m0 === month0;
-    });
-  }, [events, removedIds, year, month0]);
 
   // สร้าง map: วัน -> กิจกรรม (กระจายตามช่วง start–end)
   const eventsByDay = useMemo(

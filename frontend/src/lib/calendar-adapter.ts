@@ -10,9 +10,11 @@ import { CalendarEvent } from "@/types/calendar";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-// ✅ พยายามหยิบ UUID จาก activity_id ก่อน แล้วค่อย id (บางระบบ id ก็เป็น UUID)
-function pickUuid(a: ActivityRaw & { activity_id?: string; slug?: string | null }): string | null {
-  const cands = [a.activity_id, (a as any).id]; // ถ้ามี activity_id ให้ใช้ก่อน
+// ✅ พยายามหยิบ UUID จาก activity_id ก่อน แล้วค่อย id
+function pickUuid(
+  a: ActivityRaw & { activity_id?: string; slug?: string | null }
+): string | null {
+  const cands: Array<string | undefined | null> = [a.activity_id, a.id];
   const hit = cands.find((v) => v && UUID_RE.test(String(v)));
   return hit ?? null;
 }
@@ -40,33 +42,41 @@ function ensureTz(iso: string) {
 }
 
 // -------- adapters --------
-function adaptClass(c: classes | any, rootYmd?: string): CalendarEvent | null {
-  const baseYmd: string | undefined = c?.class_date ?? rootYmd;
+function adaptClass(c: classes, rootYmd?: string): CalendarEvent | null {
+  const baseYmd: string | undefined = c.class_date ?? rootYmd;
   if (!baseYmd) return null;
+
   const d = ymdFromUTC(String(baseYmd));
   if (!d) return null;
-  if (!c?.start_time || !c?.end_time) return null;
+  if (!c.start_time || !c.end_time) return null;
 
   const start_at = buildThaiIso(d.y, d.m, d.day, c.start_time);
-  const end_at   = buildThaiIso(d.y, d.m, d.day, c.end_time);
+  const end_at = buildThaiIso(d.y, d.m, d.day, c.end_time);
 
   return {
-    id: `class-${c.class_code ?? "NA"}-${d.y}${String(d.m).padStart(2,"0")}${String(d.day).padStart(2,"0")}-${c.start_time}`,
-    title: c.class_code && c.class_name ? `[${c.class_code}] ${c.class_name}` : c.class_name ?? "Class",
+    id: `class-${c.class_code ?? "NA"}-${d.y}${String(d.m).padStart(2, "0")}${String(d.day).padStart(2, "0")}-${c.start_time}`,
+    title:
+      c.class_code && c.class_name
+        ? `[${c.class_code}] ${c.class_name}`
+        : c.class_name ?? "Class",
     kind: "class",
     start_at,
     end_at,
   };
 }
 
-function adaptActivity(a: ActivityRaw & { activity_id?: string; slug?: string | null }, idx: number): CalendarEvent | null {
+function adaptActivity(
+  a: ActivityRaw & { activity_id?: string; slug?: string | null },
+  idx: number
+): CalendarEvent | null {
   if (!a?.start_at || !a?.end_at) return null;
 
   const uuid = pickUuid(a);
 
-  // ✅ ถ้าไม่มี UUID จริง ๆ ให้สร้าง "id ชั่วคราว" ที่ไม่ใช่ UUID เพื่อโชว์รายการได้
-  //    (แล้วไปปิดปุ่ม MoreInfo ฝั่ง ActionCell ตาม UUID check)
-  const fallbackId = `tmp-${idx}-${(a.title ?? "activity").slice(0, 24)}-${new Date(a.start_at).getTime()}`;
+  // ถ้าไม่มี UUID ให้ใช้ id ชั่วคราว
+  const fallbackId = `tmp-${idx}-${(a.title ?? "activity").slice(0, 24)}-${new Date(
+    a.start_at
+  ).getTime()}`;
 
   return {
     id: uuid ?? fallbackId,
@@ -74,21 +84,22 @@ function adaptActivity(a: ActivityRaw & { activity_id?: string; slug?: string | 
     kind: "activity",
     start_at: ensureTz(a.start_at),
     end_at: ensureTz(a.end_at),
-    // ไม่ส่ง slug ออกไปใช้งานลิงก์แล้ว
   };
 }
 
 export function adaptCalendar(data: calendar): CalendarEvent[] {
   const out: CalendarEvent[] = [];
-  const rootYmd: string | undefined = (data as any)?.date;
+  const rootYmd: string | undefined = data.date;
 
   for (const c of data.classes ?? []) {
-    const ev = adaptClass(c as any, rootYmd);
+    const ev = adaptClass(c, rootYmd);
     if (ev) out.push(ev);
   }
+
   (data.activities ?? []).forEach((a, i) => {
-    const ev = adaptActivity(a as any, i);
+    const ev = adaptActivity(a, i);
     if (ev) out.push(ev);
   });
+
   return out;
 }

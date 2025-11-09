@@ -22,13 +22,6 @@ export default function TimeLabel({ dateYmd, showClock = true, className }: Prop
 
     if (!showClock) return dateLabel;
 
-    const timeStr = now.toLocaleTimeString("th-TH", {
-      hour12: false,
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-
     // รูปแบบเหมือนในภาพ: วันที่ • HH:MM:SS
     return `วัน${dateLabel}`;
   }, [dateYmd, now, showClock]);

@@ -17,7 +17,6 @@ function CalendarCellBase({
   events,
   highlight,
   selected = false,
-  onShowMore,
   onSelectDay,
 }: Props) {
   const MAX_EVENTS = 3;

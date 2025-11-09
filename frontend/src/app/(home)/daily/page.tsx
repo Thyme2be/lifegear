@@ -323,43 +323,51 @@ export default function DailyPage() {
     ActivityThumbnailResponse[]
   >([]);
 
-  useEffect(() => {
-    const ac = new AbortController();
-    async function loadUpcoming() {
-      setThumbsLoading(true);
-      setThumbsError(null);
+ useEffect(() => {
+  const ac = new AbortController();
+
+  const getErrorMessage = (e: unknown) =>
+    e instanceof Error ? e.message : "เกิดข้อผิดพลาดไม่ทราบสาเหตุ";
+
+  async function fetchThumbs(
+    url: string,
+    signal: AbortSignal
+  ): Promise<ActivityThumbnailResponse[]> {
+    const res = await fetch(url, { credentials: "include", signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data: ActivityThumbnailResponse[] = await res.json();
+    return data;
+  }
+
+  async function loadUpcoming() {
+    setThumbsLoading(true);
+    setThumbsError(null);
+
+    try {
+      // ลองเรียกเฉพาะ upcoming ก่อน
+      const url = `${apiRoutes.getAllActivitiesThumbnails}?status=upcoming`;
+      const data = await fetchThumbs(url, ac.signal);
+      setUpcomingThumbs(data.filter((a) => a.status === "upcoming"));
+    } catch {
+      // ถ้าล้มเหลว (ยกเว้นถูก abort) ให้ fallback ไปดึงทั้งหมด
       try {
-        const url = `${apiRoutes.getAllActivitiesThumbnails}?status=upcoming`;
-        const res = await fetch(url, {
-          credentials: "include",
-          signal: ac.signal,
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: ActivityThumbnailResponse[] = await res.json();
-        const onlyUpcoming = data.filter((a) => a.status === "upcoming");
-        setUpcomingThumbs(onlyUpcoming);
-      } catch (_e) {
-        try {
-          if (!ac.signal.aborted) {
-            const resAll = await fetch(apiRoutes.getAllActivitiesThumbnails, {
-              credentials: "include",
-              signal: ac.signal,
-            });
-            if (!resAll.ok) throw new Error(`HTTP ${resAll.status}`);
-            const allData: ActivityThumbnailResponse[] = await resAll.json();
-            setUpcomingThumbs(allData.filter((a) => a.status === "upcoming"));
-          }
-        } catch (err2: any) {
-          if (!ac.signal.aborted)
-            setThumbsError(err2?.message || "โหลดกิจกรรมแนะนำไม่สำเร็จ");
+        if (!ac.signal.aborted) {
+          const all = await fetchThumbs(apiRoutes.getAllActivitiesThumbnails, ac.signal);
+          setUpcomingThumbs(all.filter((a) => a.status === "upcoming"));
         }
-      } finally {
-        if (!ac.signal.aborted) setThumbsLoading(false);
+      } catch (err2: unknown) {
+        if (!ac.signal.aborted) {
+          setThumbsError(getErrorMessage(err2) || "โหลดกิจกรรมแนะนำไม่สำเร็จ");
+        }
       }
+    } finally {
+      if (!ac.signal.aborted) setThumbsLoading(false);
     }
-    loadUpcoming();
-    return () => ac.abort();
-  }, [refreshTick]);
+  }
+
+  loadUpcoming();
+  return () => ac.abort();
+}, [refreshTick]);
 
   const upcomingRows = useMemo(() => {
     const selected = parseYmd(dateStr);
