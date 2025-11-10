@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import {Noto_Serif_Thai } from "next/font/google";
 import AuthGuard from "@/components/AuthGuard";
+import ToastMount from "@/components/ToastMount";
+
+
+
 
 const notoSerifThai = Noto_Serif_Thai({
   variable: "--font-noto-serif-thai",
@@ -26,6 +30,7 @@ export default function RootLayout({
       >
         <AuthGuard>
           {children}
+           <ToastMount />
         </AuthGuard>
       </body>
     </html>

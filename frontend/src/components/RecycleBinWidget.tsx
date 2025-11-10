@@ -42,12 +42,12 @@ export default function RecycleBinWidget({
     >
       <div className="shadow-lg rounded-xl bg-white border min-w-72">
         <button
-          className="w-full flex items-center justify-between px-4 py-2 rounded-t-xl hover:bg-gray-50"
+          className="w-full flex items-center justify-between px-4 py-2 rounded-t-xl hover:bg-gray-50 cursor-pointer"
           onClick={() => onToggle?.(!show)}
           aria-expanded={show}
         >
           <span className="font-semibold">{title}</span>
-          <span className="inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full text-xs bg-[#730217] text-white">
+          <span className="inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full text-xs bg-main text-white">
             {entries.length}
           </span>
         </button>
@@ -76,7 +76,7 @@ export default function RecycleBinWidget({
                       )}
                     </div>
                     <button
-                      className="text-sm px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700"
+                      className="text-sm px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
                       onClick={() => onRestoreOne(e.id)}
                     >
                       กู้คืน
@@ -87,7 +87,7 @@ export default function RecycleBinWidget({
             )}
             {entries.length > 0 && (
               <button
-                className="mt-3 w-full text-sm px-3 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
+                className="mt-3 w-full text-sm px-3 py-2 rounded-md bg-gray-200 hover:bg-gray-300 cursor-pointer"
                 onClick={onRestoreAll}
               >
                 กู้คืนทั้งหมด

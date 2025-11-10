@@ -29,7 +29,7 @@ export default function CalendarCard({
       className="rounded-xl border-4 border-[#D1B79E] bg-[#FFF8E7] shadow-md p-2 sm:p-3"
     >
       <div
-        className="grid grid-cols-7 text-center font-semibold pb-2 border-b text-[#730217] text-[12px] sm:text-sm md:text-base"
+        className="grid grid-cols-7 text-center font-semibold pb-2 border-b text-main text-[12px] sm:text-sm md:text-base"
         role="row"
         aria-hidden="true"
       >

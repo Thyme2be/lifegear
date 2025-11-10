@@ -401,7 +401,7 @@ export default function DailyPage() {
   }, [upcomingThumbs, dateStr, todayRows, addedIds]);
 
   return (
-    <main className="bg-[#f6f1e7] min-h-screen">
+    <main className="bg-primary min-h-screen">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         <header className="w-full text-main mb-6 text-center">
           <h1 className="text-2xl sm:text-3xl font-semibold">
@@ -416,7 +416,7 @@ export default function DailyPage() {
         </header>
 
         {/* กล่องหลัก */}
-        <section className="bg-white rounded-md p-6">
+        <section className="bg-white rounded-xl p-6">
           {/* Loading / Error */}
           {loading && (
             <div className="text-center py-8 text-gray-500">
@@ -431,7 +431,7 @@ export default function DailyPage() {
 
           {/* Header (Desktop) */}
           <div className="hidden sm:grid grid-cols-4 font-semibold text-black mb-2 normal-text">
-            <div className="text-center text-[#B30000]">กิจกรรมของฉัน</div>
+            <div className="text-center text-bf-btn">กิจกรรมของฉัน</div>
             <div className="text-center">กำหนดการ</div>
             <div className="text-center">ระยะเวลา</div>
             <div className="text-center">ดำเนินการ</div>
@@ -494,7 +494,7 @@ export default function DailyPage() {
               </p>
             ) : (
               <>
-                <h2 className="text-center text-[#B30000] font-semibold mb-2">
+                <h2 className="text-center text-bf-btn font-semibold mb-2">
                   กิจกรรมของฉัน
                 </h2>
                 <ul role="list" className="space-y-0">
@@ -516,7 +516,7 @@ export default function DailyPage() {
           {/* ===== ตารางล่าง: กิจกรรมหลังจากวันนั้น ===== */}
           <div className="w-full mt-10">
             <div className="hidden sm:grid grid-cols-4 font-semibold text-black mb-2 normal-text">
-              <div className="text-center text-[#B30000]">กิจกรรมแนะนำ</div>
+              <div className="text-center text-bf-btn">กิจกรรมแนะนำ</div>
               <div className="text-center">กำหนดการ</div>
               <div className="text-center">ระยะเวลา</div>
               <div className="text-center">ดำเนินการ</div>
@@ -593,7 +593,7 @@ export default function DailyPage() {
               </p>
             ) : (
               <>
-                <h2 className="text-center text-[#B30000] font-semibold mb-2">
+                <h2 className="text-center text-bf-btn font-semibold mb-2">
                   กิจกรรมแนะนำ
                 </h2>
                 <ul role="list" className="space-y-0">

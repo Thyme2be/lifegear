@@ -181,7 +181,7 @@ export default function MonthlyPage() {
 
   /* =============== Render =============== */
   return (
-    <main className="bg-[#f6f1e7] p-3 sm:p-6">
+    <main className="bg-primary p-3 sm:p-6">
       {/* Header */}
       <header className="max-w-6xl mx-auto mb-4 sm:mb-6 px-2 text-main flex flex-col items-center text-center">
         <div className="flex flex-wrap items-center gap-2 sm:gap-4">
@@ -252,7 +252,7 @@ export default function MonthlyPage() {
           className="bg-white rounded-4xl shadow-[0_4px_12px_rgba(0,0,0,0.08)]
                      p-4 sm:p-6 flex flex-col min-h-full"
         >
-          <h2 className="text-xl sm:text-2xl font-bold text-main text-center mb-3">
+          <h2 className="text-2xl sm:text-3xl font-bold text-main text-center mb-3">
             กิจกรรมของฉัน
           </h2>
 
@@ -280,7 +280,7 @@ export default function MonthlyPage() {
           <div className="mt-auto" />
           <Link
             href="/activity"
-            className="w-full text-center mt-4 py-2 rounded-full text-base sm:text-lg font-extrabold font-serif-thai bg-[#F1D500] text-black hover:bg-[#e0c603] transition-colors cursor-pointer"
+            className="w-full text-center mt-4 py-2 rounded-full text-xl sm:text-2xl font-extrabold font-serif-thai bg-[#F1D500] text-black hover:bg-[#e0c603] transition-colors cursor-pointer"
           >
             กิจกรรม
           </Link>

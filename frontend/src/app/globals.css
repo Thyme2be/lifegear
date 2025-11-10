@@ -21,7 +21,6 @@
   --color-primary: #f6f1e7;
   --color-bf-btn: #b30000;
   --color-btn-hover: #880000;
-  --color-cream: #fffef4;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -51,6 +50,58 @@ body {
   .no-spinner::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
+  }
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes scaleIn {
+    0% {
+      transform: scale(0.96);
+      opacity: 0.5;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.15s ease-out forwards;
+  }
+  .animate-scale-in {
+    animation: scaleIn 0.18s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes scaleIn {
+    0% {
+      transform: scale(0.96);
+      opacity: 0.5;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.15s ease-out forwards;
+  }
+
+  .animate-scaleIn {
+    animation: scaleIn 0.18s ease-out forwards;
   }
 }
 

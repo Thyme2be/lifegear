@@ -1,6 +1,6 @@
 // app/(home)/activity/[activityId]/ActivityDetails.tsx
 "use client";
-
+import { toastSuccess, toastError } from "@/lib/toast";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ContactInfoView from "@/components/contactInfo";
@@ -30,12 +30,19 @@ function InfoRow({
   );
 }
 
-export default function ActivityDetails({ activityId }: { activityId: string }) {
+export default function ActivityDetails({
+  activityId,
+}: {
+  activityId: string;
+}) {
   const searchParams = useSearchParams();
   const fromMine = (searchParams.get("src") ?? "") === "mine";
 
   // ✅ กัน double-encoding เช่น .../%2520... ด้วยการ decode ก่อน
-  const normalizedId = useMemo(() => decodeURIComponent(activityId), [activityId]);
+  const normalizedId = useMemo(
+    () => decodeURIComponent(activityId),
+    [activityId]
+  );
 
   const [data, setData] = useState<ActivityDetailResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,9 +105,9 @@ export default function ActivityDetails({ activityId }: { activityId: string }) 
 
     let timeText = "ไม่ระบุเวลา";
     if (data?.start_at && data?.end_at) {
-      timeText = `${formatTimeThaiFromIso(data.start_at)} - ${formatTimeThaiFromIso(
-        data.end_at
-      )}`;
+      timeText = `${formatTimeThaiFromIso(
+        data.start_at
+      )} - ${formatTimeThaiFromIso(data.end_at)}`;
     } else if (data?.start_at) {
       timeText = formatTimeThaiFromIso(data.start_at) ?? "ไม่ระบุเวลา";
     }
@@ -178,12 +185,20 @@ export default function ActivityDetails({ activityId }: { activityId: string }) 
 
       <div className="flex flex-col sm:flex-row justify-end gap-4">
         <AddToLifeButton
-          activityId={normalizedId}           
+          activityId={normalizedId}
           startAt={data.start_at ?? undefined}
           endAt={data.end_at ?? undefined}
-          forceDisabled={fromMine}  
-          onDone={() => {
-            /* ตามเดิม */
+          forceDisabled={fromMine}
+          onDone={(res) => {
+            if (!res.ok) {
+              const msg =
+                typeof res.error === "string" && res.error.trim()
+                  ? res.error
+                  : "เพิ่มไม่สำเร็จ ลองใหม่อีกครั้ง";
+              toastError(msg);
+            } else {
+              toastSuccess("เพิ่มลงในตารางชีวิตสำเร็จ!");
+            }
           }}
         />
       </div>

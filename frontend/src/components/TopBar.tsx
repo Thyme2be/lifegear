@@ -8,6 +8,7 @@ import type { User } from "@/types/activities";
 import Link from "next/link";
 import { apiRoutes } from "@/lib/apiRoutes";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { getInitials, pickAvatarBg } from "@/utils/avatar";
 
 export default function TopBar() {
   const [isOpen, setIsOpen] = useState(false); // Hamburger Mobile
@@ -32,8 +33,10 @@ export default function TopBar() {
       const target = event.target as Node;
 
       if (
-        profileRef.current && !profileRef.current.contains(target) &&
-        mobileProfileRef.current && !mobileProfileRef.current.contains(target)
+        profileRef.current &&
+        !profileRef.current.contains(target) &&
+        mobileProfileRef.current &&
+        !mobileProfileRef.current.contains(target)
       ) {
         setProfileOpen(false);
       }
@@ -44,7 +47,7 @@ export default function TopBar() {
   }, []);
 
   return (
-    <nav className="fixed w-full h-20 bg-[#730217] px-6 sm:px-10 flex justify-between items-center z-50 overflow-visible">
+    <nav className="fixed w-full h-20 bg-main px-6 sm:px-10 flex justify-between items-center z-50 overflow-visible">
       {/* โลโก้ */}
       <Link href="/" className="flex items-center cursor-pointer">
         <Image
@@ -59,15 +62,21 @@ export default function TopBar() {
       {/* Desktop Menu */}
       <ul className="hidden sm:flex items-center space-x-10 text-white font-bold text-lg">
         <li>
-          <Link href="/" className="hover:text-yellow-400">หน้าหลัก</Link>
+          <Link href="/" className="hover:text-yellow-400">
+            หน้าหลัก
+          </Link>
         </li>
         <li>
-          <Link href="/activity" className="hover:text-yellow-400">กิจกรรม</Link>
+          <Link href="/activity" className="hover:text-yellow-400">
+            กิจกรรม
+          </Link>
         </li>
 
         {/* ตารางชีวิต Desktop - Hover Dropdown */}
         <li className="relative group">
-          <button className="hover:text-yellow-400 cursor-pointer">ตารางชีวิต</button>
+          <button className="hover:text-yellow-400 cursor-pointer">
+            ตารางชีวิต
+          </button>
           <div className="absolute top-8 left-0 bg-red-800 rounded-md shadow-lg py-2 w-48 text-base opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
             <Link href="/monthly" className="block px-4 py-2 hover:bg-red-700">
               ตารางชีวิต (รายเดือน)
@@ -79,23 +88,55 @@ export default function TopBar() {
         </li>
 
         <li>
-          <Link href="/help" className="hover:text-yellow-400">วิธีใช้งาน</Link>
+          <Link href="/help" className="hover:text-yellow-400">
+            วิธีใช้งาน
+          </Link>
         </li>
 
-        {/* Profile Desktop */}
-        <li ref={profileRef} className="relative">
-          <button
-            title="Toggle Profile Menu"
-            onClick={() => setProfileOpen(!profileOpen)}
+        {/* Profile Desktop (hover-reveal, คงตำแหน่งเดิม) */}
+        <li className="relative group hidden sm:block">
+          {/* Avatar */}
+          <div className="inline-flex">
+            <div
+              className={[
+                "w-12 h-12 rounded-full cursor-pointer",
+                "flex items-center justify-center select-none",
+                "text-white font-semibold",
+                pickAvatarBg(user),
+              ].join(" ")}
+              aria-label="เมนูโปรไฟล์"
+              title={`${user?.first_name_th ?? ""} ${
+                user?.last_name_th ?? ""
+              }`.trim()}
+              tabIndex={0} // โฟกัสด้วยคีย์บอร์ด -> group-focus-within ทำงาน
+            >
+              {getInitials(user)}
+            </div>
+          </div>
+
+          {/* ProfileInfo วางอยู่ตำแหน่งเดิมเสมอ แต่ซ่อนจนกว่า hover/focus */}
+          <div
+            className={[
+              "absolute top-14 right-0",
+              // ซ่อนเริ่มต้น
+              "opacity-0 invisible translate-y-1 pointer-events-none",
+              // แสดงเมื่อ hover/focus บนกลุ่ม
+              "group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:pointer-events-auto",
+              "group-focus-within:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:pointer-events-auto",
+              "transition-all duration-150",
+            ].join(" ")}
           >
-            <div className="w-12 h-12 bg-gray-300 rounded-full cursor-pointer"></div>
-          </button>
-          {profileOpen && <ProfileInfo user={user} />}
+            {/* floating=false เพื่อใช้กล่องปกติ ไม่ซ้อน absolute ซ้ำ */}
+            <ProfileInfo user={user} floating={false} />
+          </div>
         </li>
       </ul>
 
       {/* Mobile Hamburger + Profile */}
-      <div className="sm:hidden flex items-center space-x-4" ref={mobileProfileRef}>
+      <div
+        className="sm:hidden flex items-center space-x-4"
+        ref={mobileProfileRef}
+      >
         {/* Hamburger */}
         <button
           className="text-white text-3xl focus:outline-none cursor-pointer"
@@ -118,17 +159,43 @@ export default function TopBar() {
               setLifeOpenMobile(false);
             }}
           >
-            <div className="w-12 h-12 bg-gray-300 rounded-full cursor-pointer"></div>
+            <div
+              className={[
+                "w-12 h-12 rounded-full cursor-pointer",
+                "flex items-center justify-center select-none",
+                "text-white font-semibold",
+                pickAvatarBg(user),
+              ].join(" ")}
+              aria-label="เมนูโปรไฟล์"
+              title={`${user?.first_name_th ?? ""} ${
+                user?.last_name_th ?? ""
+              }`.trim()}
+            >
+              {getInitials(user)}
+            </div>
           </button>
-          {profileOpen && <ProfileInfo user={user} />}
+
+          {profileOpen && (
+            <ProfileInfo user={user} /* floating=true (ค่าเริ่มต้น) */ />
+          )}
         </div>
       </div>
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="absolute top-20 left-0 w-full bg-[#730217] text-white flex flex-col items-center py-6 sm:hidden space-y-4 z-50">
-          <Link href="/" className="hover:text-yellow-400 w-full text-center py-1">หน้าหลัก</Link>
-          <Link href="/activity" className="hover:text-yellow-400 w-full text-center py-1">กิจกรรม</Link>
+        <div className="absolute top-20 left-0 w-full bg-main text-white flex flex-col items-center py-6 sm:hidden space-y-4 z-50">
+          <Link
+            href="/"
+            className="hover:text-yellow-400 w-full text-center py-1"
+          >
+            หน้าหลัก
+          </Link>
+          <Link
+            href="/activity"
+            className="hover:text-yellow-400 w-full text-center py-1"
+          >
+            กิจกรรม
+          </Link>
 
           {/* ตารางชีวิต Mobile Dropdown - Click with Icon */}
           <div className="relative w-full">
@@ -150,16 +217,27 @@ export default function TopBar() {
                 lifeOpenMobile ? "max-h-40 py-2" : "max-h-0 py-0"
               }`}
             >
-              <Link href="/monthly" className="w-full text-center py-1 hover:text-yellow-400">
+              <Link
+                href="/monthly"
+                className="w-full text-center py-1 hover:text-yellow-400"
+              >
                 ตารางชีวิต (รายเดือน)
               </Link>
-              <Link href="/daily" className="w-full text-center py-1 hover:text-yellow-400">
+              <Link
+                href="/daily"
+                className="w-full text-center py-1 hover:text-yellow-400"
+              >
                 ตารางชีวิต (รายวัน)
               </Link>
             </div>
           </div>
 
-          <Link href="/help" className="hover:text-yellow-400 w-full text-center py-1">วิธีใช้งาน</Link>
+          <Link
+            href="/help"
+            className="hover:text-yellow-400 w-full text-center py-1"
+          >
+            วิธีใช้งาน
+          </Link>
         </div>
       )}
     </nav>

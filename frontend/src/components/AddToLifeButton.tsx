@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiRoutes } from "@/lib/apiRoutes";
+import AddToLifeModal from "@/components/ui/AddToLifeModal";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -19,7 +20,34 @@ function parseJsonSafe<T>(text: string): T | null {
 function getErrorMessage(e: unknown): string {
   if (e instanceof Error) return e.message;
   if (typeof e === "string") return e;
-  return "เกิดข้อผิดพลาดไม่ทราบสาเหตุ";
+  return getThaiErrorMessage(e);
+}
+
+function getThaiErrorMessage(e: unknown): string {
+  // ถ้าแบ็คเอนด์ส่งไทยมาอยู่แล้ว ก็ส่งต่อได้เลย
+  const raw =
+    e instanceof Error ? e.message :
+    typeof e === "string" ? e :
+    "";
+
+  const msg = (raw || "").toLowerCase().trim();
+
+  // สถานะทั่วไป/ข้อความจากเบราว์เซอร์
+  if (!navigator.onLine) return "ออฟไลน์อยู่ กรุณาเชื่อมต่ออินเทอร์เน็ต";
+  if (msg.includes("failed to fetch") || msg.includes("network"))
+    return "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่อีกครั้ง";
+  if (msg.includes("timeout")) return "หมดเวลารอการตอบสนอง กรุณาลองใหม่";
+  if (msg.includes("unauthorized") || msg.includes("401")) return "กรุณาเข้าสู่ระบบก่อน";
+  if (msg.includes("forbidden") || msg.includes("403")) return "ไม่มีสิทธิ์ทำรายการนี้";
+  if (msg.includes("not found") || msg.includes("404")) return "ไม่พบข้อมูลที่ต้องการ";
+  if (msg.includes("conflict") || msg.includes("409")) return "คุณได้บันทึกกิจกรรมนี้ไว้แล้ว";
+  if (msg.includes("unprocessable") || msg.includes("422")) return "ข้อมูลไม่ครบถ้วนหรือไม่ถูกต้อง";
+
+  // ถ้าเป็นข้อความไทยอยู่แล้ว ก็คืนค่าตามเดิม
+  if (/[ก-๙]/.test(raw)) return raw;
+
+  // ค่าเริ่มต้นเป็นไทย
+  return raw ? `เกิดข้อผิดพลาด: ${raw}` : "เกิดข้อผิดพลาดไม่ทราบสาเหตุ";
 }
 
 const ADDED_IDS_KEY = "lifgear:added-ids";
@@ -46,11 +74,23 @@ export default function AddToLifeButton({
   activityId: string;
   startAt?: string;
   endAt?: string;
-  onDone?: (id: string) => void;
+  onDone?: (
+    result: { ok: true; id: string } | { ok: false; error: unknown }
+  ) => void;
   forceDisabled?: boolean;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  // ปิดด้วย ESC ตอน modal เปิด (เสริม UX)
+  useEffect(() => {
+    if (!showConfirm) return;
+    const onKey = (e: KeyboardEvent) =>
+      e.key === "Escape" && setShowConfirm(false);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showConfirm]);
 
   const now = new Date();
   const start = startAt ? new Date(startAt) : undefined;
@@ -60,39 +100,29 @@ export default function AddToLifeButton({
   const endValid = !endAt || !Number.isNaN(end?.valueOf());
 
   const isPast =
-    endValid && end
-      ? now > end
-      : startValid && start
-      ? now > start
-      : false;
-
+    endValid && end ? now > end : startValid && start ? now > start : false;
   const isOngoing =
     startValid && endValid && start && end ? now >= start && now <= end : false;
 
   const disabled = forceDisabled || loading || (isPast && !isOngoing);
 
-  const handleAdd = useCallback(async () => {
-    if (forceDisabled) return;
-
-    if (!activityId) return alert("ไม่พบรหัสกิจกรรม");
-
-    const normalizedId = decodeURIComponent(activityId.trim());
-    if (!UUID_RE.test(normalizedId)) {
-      alert("รหัสกิจกรรมไม่ถูกต้อง (ต้องเป็น UUID)");
-      return;
-    }
-
-    if (!startValid || !endValid) {
-      // ไม่บล็อกการเพิ่ม แต่แจ้งเตือนผู้ใช้
-      console.warn("start/end ไม่เป็นวันที่ที่ถูกต้อง:", { startAt, endAt });
-    }
-
-    if (isPast && !isOngoing)
-      return alert("กิจกรรมนี้สิ้นสุดไปแล้ว ไม่สามารถเพิ่มได้");
-    if (!window.confirm("ยืนยันเพิ่มกิจกรรมนี้ลงในตารางชีวิต?")) return;
+  const doAdd = useCallback(async () => {
+    const fail = (err: unknown) => {
+      onDone?.({ ok: false, error: err });
+    };
 
     try {
+      if (!activityId) return fail("ไม่พบรหัสกิจกรรม");
+
+      const normalizedId = decodeURIComponent(activityId.trim());
+      if (!UUID_RE.test(normalizedId))
+        return fail("รหัสกิจกรรมไม่ถูกต้อง (ต้องเป็น UUID)");
+
+      if (isPast && !isOngoing)
+        return fail("กิจกรรมนี้สิ้นสุดไปแล้ว ไม่สามารถเพิ่มได้");
+
       setLoading(true);
+
       const res = await fetch(apiRoutes.addActivityToMyLife, {
         method: "POST",
         credentials: "include",
@@ -119,41 +149,43 @@ export default function AddToLifeButton({
         })
       );
 
-      alert("เพิ่มลงตารางชีวิตสำเร็จ 🎉");
-      onDone?.(normalizedId);
-
-      // เปลี่ยนเส้นทางไป canonical URL แล้ว refresh
       router.replace(`/activity/${normalizedId}`);
       router.refresh();
+
+      onDone?.({ ok: true, id: normalizedId });
     } catch (e) {
       console.error(e);
-      alert(getErrorMessage(e) || "เพิ่มกิจกรรมไม่สำเร็จ กรุณาลองใหม่");
+      fail(getErrorMessage(e));
     } finally {
       setLoading(false);
+      setShowConfirm(false);
     }
-  }, [
-    activityId,
-    forceDisabled, // ✅ เพิ่ม dependency ที่หายไป
-    isPast,
-    isOngoing,
-    onDone,
-    router,
-    startAt, // เผื่อใช้ใน warning log
-    endAt,   // เผื่อใช้ใน warning log
-    startValid,
-    endValid,
-  ]);
+  }, [activityId, isPast, isOngoing, onDone, router]);
 
   return (
-    <button
-      type="button"
-      onClick={handleAdd}
-      disabled={disabled}
-      className="px-6 py-3 rounded-full bg-[#B30000] hover:bg-[#880000] disabled:opacity-60 text-white font-bold shadow-md transition"
-      title={disabled ? "กิจกรรมนี้สิ้นสุดไปแล้ว" : undefined}
-      aria-disabled={disabled}
-    >
-      {loading ? "กำลังเพิ่ม..." : "เพิ่มลงในตารางชีวิต"}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => !disabled && setShowConfirm(true)}
+        disabled={disabled}
+        className="  px-6 py-3 rounded-full 
+    bg-bf-btn hover:bg-btn-hover cursor-pointer
+    disabled:bg-gray-400 disabled:text-gray-100
+    disabled:cursor-not-allowed 
+    text-white font-bold shadow-md transition"
+        title={disabled ? "กิจกรรมนี้สิ้นสุดไปแล้ว" : undefined}
+        aria-disabled={disabled}
+      >
+        {loading ? "กำลังเพิ่ม..." : "เพิ่มลงในตารางชีวิต"}
+      </button>
+
+      <AddToLifeModal
+        open={showConfirm}
+        onCancel={() => setShowConfirm(false)}
+        onConfirm={doAdd}
+        startAt={startAt}
+        endAt={endAt}
+      />
+    </>
   );
 }

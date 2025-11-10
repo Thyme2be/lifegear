@@ -28,7 +28,7 @@ export default function MonthEventList({
   if (list.length === 0) {
     return (
       <div className="w-full flex-1 flex items-center justify-center">
-        <p className="text-gray-400 text-xl">
+        <p className="text-gray-400 text-2xl">
           ไม่มีข้อมูลกิจกรรมในวันที่ {selectedDay}
         </p>
       </div>

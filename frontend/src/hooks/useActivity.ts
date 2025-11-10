@@ -7,27 +7,34 @@ import type { ActivityThumbnailResponse } from "@/types/activities";
 import { ActivityCategory } from "@/lib/enums/activity";
 import { apiRoutes } from "@/lib/apiRoutes";
 import { normalizeCategory } from "@/utils/activityUtils";
+/* ✅ นำเข้า TimeFilter จาก SearchBox */
+import { TimeFilter } from "@/components/SearchBox";
+/* ✅ ใช้ตัวช่วยเวลา (Bangkok) ที่โปรเจกต์มีอยู่ */
+import { ymdInBangkok } from "@/lib/datetime";
 
-type MaybeCategory = {
-  category?: unknown;
-  category_code?: unknown;
-};
-
-type ServerError = {
-  message?: string;
-  detail?: string;
-  error?: string;
-};
+type MaybeCategory = { category?: unknown; category_code?: unknown };
+type ServerError = { message?: string; detail?: string; error?: string };
 
 const FILTER_OPTIONS = Object.values(ActivityCategory) as ActivityCategory[];
 
-/** ดึงข้อความจาก server response แบบ type-safe */
 function getServerMessage(data: unknown): string | undefined {
   if (data && typeof data === "object") {
     const d = data as ServerError;
     return d.message || d.detail || d.error;
   }
   return undefined;
+}
+
+/* ✅ ดึง startISO จากหลายฟิลด์ที่เป็นไปได้ */
+function getStartISO(a: ActivityThumbnailResponse): string | null {
+  const anyA = a as any;
+  return (
+    a?.start_at ??
+    anyA?.startISO ??
+    anyA?.startAt ??
+    anyA?.date ?? // กรณี thumbnail ส่งเป็น "YYYY-MM-DD"
+    null
+  );
 }
 
 export function useActivity() {
@@ -42,14 +49,14 @@ export function useActivity() {
   const [selectedFilters, setSelectedFilters] = useState<ActivityCategory[]>(
     []
   );
+  /* ✅ state ตัวกรองเวลา */
+  const [timeFilter, setTimeFilter] = useState<TimeFilter | null>(null);
 
-  // Set ของหมวดที่รองรับ (ไม่ recreate)
   const knownCategories = useMemo(
     () => new Set<ActivityCategory>(FILTER_OPTIONS),
     []
   );
 
-  // โหลดข้อมูล (ยกเลิกได้)
   useEffect(() => {
     const controller = new AbortController();
     let canceled = false;
@@ -71,7 +78,6 @@ export function useActivity() {
         }
       } catch (err: unknown) {
         if (axios.isCancel(err)) return;
-
         let message = "โหลดข้อมูลล้มเหลว";
         if (axios.isAxiosError(err)) {
           const ax = err as AxiosError<unknown>;
@@ -92,25 +98,21 @@ export function useActivity() {
     };
   }, []);
 
-  // toggle filter รายตัว
   const handleFilterChange = useCallback((value: ActivityCategory) => {
     setSelectedFilters((prev) =>
       prev.includes(value) ? prev.filter((f) => f !== value) : [...prev, value]
     );
   }, []);
 
-  // reset ฟิลเตอร์ทั้งหมด
   const resetFilters = useCallback(() => {
     setSelectedFilters([]);
     setSearchText("");
+    setTimeFilter(null); // ✅ รีเซ็ตตัวกรองเวลา
   }, []);
 
-  // สตริงค้นหาแบบ normalize (lowercase+trim)
   const normQ = useMemo(() => searchText.trim().toLowerCase(), [searchText]);
 
-  // คำนวณผลกรองทุกครั้งที่ activities/filters/searchText เปลี่ยน
   useEffect(() => {
-    // ฟังก์ชันช่วยอ่านหมวดจาก activity (รองรับ category|category_code)
     const extractCategory = (
       a: ActivityThumbnailResponse
     ): ActivityCategory | undefined => {
@@ -122,34 +124,60 @@ export function useActivity() {
       );
     };
 
-    const activeFilters = selectedFilters;
+    /* ✅ today แบบมี fallback และใช้ฟิลด์ m0/d ให้ถูกต้อง */
+    const now = new Date();
+    const today = ymdInBangkok(now.toISOString()) ?? {
+      y: now.getFullYear(),
+      m0: now.getMonth(),
+      d: now.getDate(),
+    };
 
     const next = activities.filter((a) => {
+      // 1) ค้นหาตามข้อความ
       const title = (a.title ?? "").toLowerCase();
       const matchText = normQ === "" ? true : title.includes(normQ);
 
-      if (activeFilters.length === 0) return matchText;
-
+      // 2) หมวดหมู่
+      const activeFilters = selectedFilters;
       const category = extractCategory(a);
 
-      // ถ้าเลือก Others → ให้รายการที่ category ไม่รู้จักผ่านด้วย
-      if (activeFilters.includes(ActivityCategory.Others)) {
+      let matchCategory: boolean;
+      if (activeFilters.length === 0) {
+        matchCategory = true;
+      } else if (activeFilters.includes(ActivityCategory.Others)) {
         const isKnown = category ? knownCategories.has(category) : false;
-        const matchFilter =
+        matchCategory =
           (category && activeFilters.includes(category)) || !isKnown;
-        return matchText && matchFilter;
+      } else {
+        matchCategory = !!category && activeFilters.includes(category);
       }
 
-      return matchText && !!category && activeFilters.includes(category);
+      if (!(matchText && matchCategory)) return false;
+
+      // 3) ✅ ช่วงเวลา
+      if (!timeFilter) return true;
+
+      const iso = getStartISO(a);
+      if (!iso) return false; // ถ้าไม่รู้วันเวลา เมื่อมี timeFilter ให้ตัดทิ้ง
+
+      const parts = ymdInBangkok(iso);
+      if (!parts) return false;
+
+      if (timeFilter === TimeFilter.TODAY) {
+        return (
+          parts.y === today.y && parts.m0 === today.m0 && parts.d === today.d
+        );
+      }
+      if (timeFilter === TimeFilter.THIS_MONTH) {
+        return parts.y === today.y && parts.m0 === today.m0;
+      }
+      return true;
     });
 
     setFilteredActivities(next);
-  }, [activities, selectedFilters, normQ, knownCategories]);
+  }, [activities, selectedFilters, normQ, knownCategories, timeFilter]);
 
-  // สำหรับกรณีอยากมีปุ่ม Search ชัด ๆ (ทางเลือก)
-  const handleSearch = useCallback(() => {
-    // ไม่ต้องทำอะไร เพราะ useEffect ด้านบนจะรันเองจาก state ปัจจุบัน
-  }, []);
+  const handleSearch = useCallback(() => {}, []);
 
   return {
     activities,
@@ -157,17 +185,18 @@ export function useActivity() {
     loading,
     error,
 
-    // search
     searchText,
     setSearchText,
 
-    // filters
     selectedFilters,
     setSelectedFilters,
     handleFilterChange,
     resetFilters,
 
-    // optional: ปุ่ม search
+    /* ✅ ส่ง state/time filter ออกไปให้หน้าใช้ */
+    timeFilter,
+    setTimeFilter,
+
     handleSearch,
   };
 }

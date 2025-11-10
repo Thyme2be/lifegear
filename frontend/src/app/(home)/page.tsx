@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <main className="bg-cream">
+    <main className="bg-primary">
 
       {/* Hero Section with Slider */}
       <BannerSliderWrapper />
