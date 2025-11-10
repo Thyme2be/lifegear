@@ -5,6 +5,7 @@ import type {
   activities as ActivityRaw,
 } from "@/types/calendar";
 import { CalendarEvent } from "@/types/calendar";
+import { normalizeIsoToBangkok } from "@/lib/datetime";
 
 // ✅ ตรวจ UUID
 const UUID_RE =
@@ -37,8 +38,7 @@ function buildThaiIso(y: number, m: number, d: number, hms: string) {
   return `${Y}-${M}-${D}T${hms}+07:00`;
 }
 function ensureTz(iso: string) {
-  if (/Z$|[+-]\d{2}:\d{2}$/.test(iso)) return iso;
-  return iso.replace(" ", "T") + "+07:00";
+  return normalizeIsoToBangkok(iso);
 }
 
 // -------- adapters --------
@@ -54,7 +54,10 @@ function adaptClass(c: classes, rootYmd?: string): CalendarEvent | null {
   const end_at = buildThaiIso(d.y, d.m, d.day, c.end_time);
 
   return {
-    id: `class-${c.class_code ?? "NA"}-${d.y}${String(d.m).padStart(2, "0")}${String(d.day).padStart(2, "0")}-${c.start_time}`,
+    id: `class-${c.class_code ?? "NA"}-${d.y}${String(d.m).padStart(
+      2,
+      "0"
+    )}${String(d.day).padStart(2, "0")}-${c.start_time}`,
     title:
       c.class_code && c.class_name
         ? `[${c.class_code}] ${c.class_name}`
@@ -74,9 +77,10 @@ function adaptActivity(
   const uuid = pickUuid(a);
 
   // ถ้าไม่มี UUID ให้ใช้ id ชั่วคราว
-  const fallbackId = `tmp-${idx}-${(a.title ?? "activity").slice(0, 24)}-${new Date(
-    a.start_at
-  ).getTime()}`;
+  const fallbackId = `tmp-${idx}-${(a.title ?? "activity").slice(
+    0,
+    24
+  )}-${new Date(a.start_at).getTime()}`;
 
   return {
     id: uuid ?? fallbackId,
