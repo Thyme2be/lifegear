@@ -1,4 +1,6 @@
 // src/components/NotFoundPage.tsx
+"use client";
+
 import Link from "next/link";
 
 type Cta =

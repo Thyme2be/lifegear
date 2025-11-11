@@ -7,7 +7,7 @@ export default function Footer() {
     "inline-flex items-center justify-center rounded-full p-2 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition";
 
   return (
-    <footer className="bg-[#730217] w-full backdrop-blur-md text-white border-t px-6 sm:px-16 py-4">
+    <footer className="bg-main w-full backdrop-blur-md text-white border-t px-6 sm:px-16 py-4">
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
         
         {/* Social Icons */}

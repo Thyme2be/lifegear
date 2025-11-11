@@ -23,9 +23,9 @@ const faqs = [
 
 export default function Home() {
   return (
-    <main className="bg-[#f6f1e7]">
+    <main className="bg-primary">
         {/* หัวข้อหลัก */}
-      <header className="px-4 sm:px-6 lg:px-10 py-10 heading text-[#730217] text-center">
+      <header className="px-4 sm:px-6 lg:px-10 py-10 heading text-main text-center">
           วิธีใช้งาน LifeGear
       </header>
       {/* Hero Section with Slider */}

@@ -12,7 +12,7 @@ export default function ErrorBox({
         <button
           type="button"
           onClick={onRetry}
-          className="px-4 py-2 rounded-lg bg-main hover:bg-[#880000] text-white text-sm font-semibold transition"
+          className="px-4 py-2 rounded-lg bg-main hover:bg-btn-hover text-white text-sm font-semibold transition"
         >
           ลองใหม่
         </button>

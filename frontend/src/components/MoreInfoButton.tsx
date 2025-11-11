@@ -1,11 +1,17 @@
-// src/components/MoreInfoButton.tsx (refactor)
-// ===============================
+// src/components/MoreInfoButton.tsx
 "use client";
 
 import React, { forwardRef } from "react";
 import Link from "next/link";
 import { IoEyeSharp } from "react-icons/io5";
-import { buttonClasses, iconSizeClasses, type BtnSize, type BtnVariant } from "@/lib/ui/buttonStyles";
+import {
+  buttonClasses,
+  iconSizeClasses,
+  type BtnSize,
+  type BtnVariant,
+} from "@/lib/ui/buttonStyles";
+
+export type MoreInfoMode = "icon" | "text";
 
 export interface MoreInfoButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -16,6 +22,7 @@ export interface MoreInfoButtonProps
   loading?: boolean;
   prefetch?: boolean;
   className?: string;
+  mode?: MoreInfoMode; // "icon" | "text" (default: "icon")
 }
 
 const Spinner = () => (
@@ -29,27 +36,63 @@ const MoreInfoButton = forwardRef<HTMLButtonElement, MoreInfoButtonProps>(
   (
     {
       href,
-      children = <IoEyeSharp />,
+      children = "อ่านเพิ่มเติม",
       size = "sm",
       variant = "primary",
       loading,
       disabled,
       className,
       prefetch,
+      mode = "icon",
       ...buttonProps
     },
     ref
   ) => {
     const isDisabled = Boolean(disabled || loading);
-    const ariaLabel = typeof children === "string" ? children : "อ่านเพิ่มเติม";
-    const root = buttonClasses({ size, variant, iconOnly: true, className });
 
-    const content = (
-      <span className="inline-flex items-center">
-        {loading && <Spinner />}
-        <span className={iconSizeClasses[size]}>{children}</span>
-      </span>
-    );
+    // ✅ เพิ่ม transition/scale แบบเดียวกับ AddToLife — เฉพาะโหมด "text"
+    const interactionClasses =
+      mode === "text"
+        ? [
+            "transition",
+            "hover:scale-[1.03]",
+            "active:scale-[0.98]",
+            "cursor-pointer",
+            "disabled:bg-gray-400",
+            "disabled:text-gray-100",
+            "disabled:cursor-not-allowed",
+            "disabled:pointer-events-none",
+          ].join(" ")
+        : "";
+
+    const root = buttonClasses({
+      size,
+      variant,
+      iconOnly: mode === "icon",
+      className: [interactionClasses, className].filter(Boolean).join(" "),
+    });
+
+    const content =
+      mode === "icon" ? (
+        <span className="inline-flex items-center">
+          {loading && <Spinner />}
+          <span className={iconSizeClasses[size]}>
+            <IoEyeSharp />
+          </span>
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-2">
+          {loading && <Spinner />}
+          <span>{children}</span>
+        </span>
+      );
+
+    const ariaLabel =
+      mode === "icon"
+        ? "อ่านเพิ่มเติม"
+        : typeof children === "string"
+        ? children
+        : "อ่านเพิ่มเติม";
 
     if (href) {
       return (

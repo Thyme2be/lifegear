@@ -1,344 +1,316 @@
-// app/(home)/daily/page.tsx
-// ===============================
 "use client";
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import Link from "next/link";
-import TimeLabel from "@/components/TimeLabel";
+import React, { useMemo, useState } from "react";
 import { useNow } from "@/hooks/useNow";
-import { IoChevronDown, IoChevronUp } from "react-icons/io5";
+import { useDailyEvents } from "@/hooks/useDailyEvents";
+import { apiRoutes } from "@/lib/apiRoutes";
+import RecycleBinWidget from "@/components/RecycleBinWidget";
+import DateNav from "@/components/DateNav";
+import TimeLabel from "@/components/TimeLabel";
+import type { CalendarEvent } from "@/types/calendar";
+import type { DailyRow as Row } from "@/types/viewmodels";
+import { useDateQuery } from "@/hooks/useDateQuery";
+import { useAddedIds, useRemovedBin } from "@/hooks/useLocalIds";
+import { useUpcomingThumbs } from "@/hooks/useUpcomingThumbs";
+import { rowBg } from "@/components/daily/rowBg";
+import HeaderGrid from "@/components/daily/HeaderGrid";
+import MobileRow from "@/components/daily/MobileRow";
+import RowCard from "@/components/daily/RowCard";
+
 import {
-  toYmdLocal,
-  sameDay,
   parseYmd,
+  toHm,
+  safeRangeHm,
+  ymdFromISO,
   startOfDay,
-  getRangeForDate,
-  THAI_MONTHS,
+  endOfDay,
+  formatThaiRangeFromISO,
+  isSameYmd,
+  normalizeIsoToBangkok,
+  formatThaiNoWeekday,
 } from "@/lib/datetime";
-import { getAllActivities } from "@/lib/mock-activities";
-import MoreInfoButton from "@/components/MoreInfoButton";
-import DeleteButton from "@/components/DeleteButton";
-import {
-  addRemovedId,
-  readRemovedIds,
-  REMOVED_IDS_KEY,
-} from "@/lib/removed-ids";
-
-/** Display row type */
-type Row = {
-  id: string;
-  slug?: string;
-  title: string;
-  /** "HH:MM-HH:MM" label only */
-  time: string;
-  /** "YYYY-MM-DD" */
-  date: string;
-  /** demo: quick flag */
-  isMine: boolean;
-};
-
-/** utils */
-const formatThaiDate = (d: Date) =>
-  `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`;
-
-
-/** Mobile Accordion Item (เพิ่ม prop bgColor) */
-function AccordionItem({
-  ev,
-  onDelete,
-  bgColor, // เพิ่ม prop ใหม่
-}: {
-  ev: Row;
-  onDelete?: (id: string) => void;
-  bgColor?: string; // เพิ่ม prop ใหม่
-}) {
-  const [open, setOpen] = useState(false);
-  const d = parseYmd(ev.date);
-
-  return (
-    <div
-      className={`border rounded-md mb-3 overflow-hidden sm:hidden ${bgColor}`} //  ใช้ bgColor ที่ส่งเข้ามา
-    >
-      <button
-        className="w-full px-4 py-3 bg-opacity-80 flex justify-between items-center font-semibold"
-        onClick={() => setOpen(!open)}
-      >
-        <span className="truncate">{ev.title}</span>
-        <span className="text-xl text-gray-700">
-          {open ? <IoChevronUp /> : <IoChevronDown />}
-        </span>
-      </button>
-
-      {open && (
-        <div className="px-4 py-2 bg-white space-y-2">
-          <p>
-            <span className="font-semibold">วัน:</span> {formatThaiDate(d)}
-          </p>
-          <p>
-            <span className="font-semibold">เวลา:</span> {ev.time}
-          </p>
-          <div className="flex gap-2 mt-2">
-            <MoreInfoButton
-              href={ev.slug ? `/activity/${ev.slug}` : `/activity/${ev.id}`}
-              size="sm"
-              variant="primary"
-            />
-            {ev.isMine && onDelete && (
-              <DeleteButton
-                activityId={ev.id}
-                onDelete={() => onDelete(ev.id)}
-                size="sm"
-              />
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function DailyPage() {
   const now = useNow(1000);
+  const [refreshTick, setRefreshTick] = useState(0);
 
-  // removed ids (shared w/ Monthly via localStorage)
-  const [removedIds, setRemovedIds] = useState<string[]>(() => readRemovedIds());
-
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === REMOVED_IDS_KEY) setRemovedIds(readRemovedIds());
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+  React.useEffect(() => {
+    const handler = () => setRefreshTick((k) => k + 1);
+    window.addEventListener("lifgear:activity-added", handler);
+    return () => window.removeEventListener("lifgear:activity-added", handler);
   }, []);
 
-  // map mock -> display rows
-  const events: Row[] = useMemo(() => {
-    const items = getAllActivities(now);
-    return items.map((a) => {
-      const d = new Date(a.startAt);
-      const e = new Date(a.endAt);
-      const sh = String(d.getHours()).padStart(2, "0");
-      const sm = String(d.getMinutes()).padStart(2, "0");
-      const eh = String(e.getHours()).padStart(2, "0");
-      const em = String(e.getMinutes()).padStart(2, "0");
+  const { dateStr, setDateQuery } = useDateQuery(now);
+
+  const url = React.useMemo(() => {
+    const base = apiRoutes.getMyEveryDailyEvents(dateStr);
+    const sep = base.includes("?") ? "&" : "?";
+    return `${base}${sep}rt=${refreshTick}`;
+  }, [dateStr, refreshTick]);
+
+  const { loading, error, events } = useDailyEvents(dateStr, url);
+
+  const { removedIds, removedEntries, handleDelete, restoreOne, restoreAll } =
+    useRemovedBin();
+  const addedIds = useAddedIds();
+
+  const {
+    thumbs: upcomingThumbs,
+    loading: thumbsLoading,
+    error: thumbsError,
+  } = useUpcomingThumbs(refreshTick);
+
+  const rows: Row[] = useMemo(
+    () =>
+      events.map((ev: CalendarEvent) => {
+        const startISO = ev.start_at;
+        const endISO = ev.end_at;
+        const valid =
+          !Number.isNaN(new Date(startISO).valueOf()) &&
+          !Number.isNaN(new Date(endISO).valueOf());
+        const time = valid ? `${toHm(startISO)}-${toHm(endISO)}` : "—";
+
+        // ⬇️ สร้างป้ายวันที่แบบที่ต้องการ
+        const s = new Date(normalizeIsoToBangkok(startISO));
+        const e = new Date(normalizeIsoToBangkok(endISO));
+        const dateLabel = isSameYmd(s, e)
+          ? // วันเดียว: ใช้ “10 พฤศจิกายน 2568”
+            // (ถ้าอยากมีชื่อวัน ใช้ formatThaiWithWeekday ได้)
+            formatThaiNoWeekday(s)
+          : // หลายวัน: ใช้ “22–23 พฤศจิกายน 2568”
+            formatThaiRangeFromISO(startISO, endISO);
+
+        return {
+          id: ev.id,
+          title: ev.title,
+          time,
+          date: ymdFromISO(startISO),
+          kind: ev.kind,
+          startISO,
+          endISO,
+          dateLabel, // ⬅️ ส่งต่อให้การ์ดใช้
+        };
+      }),
+    [events]
+  );
+
+  const visible = useMemo(
+    () => rows.filter((r) => !removedIds.includes(r.id)),
+    [rows, removedIds]
+  );
+
+  const todayRows = useMemo(() => {
+    const selected = parseYmd(dateStr);
+    const S = startOfDay(selected).getTime();
+    const E = endOfDay(selected).getTime();
+
+    const numStart = (r: Row) => new Date(r.startISO).getTime();
+    const numEnd = (r: Row) => new Date(r.endISO).getTime();
+
+    const classes = visible
+      .filter((r) => r.kind === "class")
+      .sort(
+        (a, b) => numStart(a) - numStart(b) || a.title.localeCompare(b.title)
+      );
+
+    const actsInRange = visible
+      .filter((r) => r.kind === "activity")
+      .filter((r) => numStart(r) <= E && numEnd(r) >= S)
+      .sort(
+        (a, b) => numStart(a) - numStart(b) || a.title.localeCompare(b.title)
+      );
+
+    return [...classes, ...actsInRange];
+  }, [visible, dateStr]);
+
+  const upcomingRows: Row[] = useMemo(() => {
+    const S = startOfDay(parseYmd(dateStr)).getTime();
+    const todayActivityIds = new Set(
+      todayRows.filter((r) => r.kind === "activity").map((r) => r.id)
+    );
+
+    const mapped: Row[] = upcomingThumbs.map((a) => {
+      const startISO = a.start_at;
+      const endISO = a.end_at ?? a.start_at;
+
+      const s = new Date(normalizeIsoToBangkok(startISO));
+      const e = new Date(normalizeIsoToBangkok(endISO));
+      const dateLabel = isSameYmd(s, e)
+        ? formatThaiNoWeekday(s)
+        : formatThaiRangeFromISO(startISO, endISO);
+
       return {
         id: a.id,
-        slug: a.slug,
         title: a.title,
-        time: `${sh}:${sm}-${eh}:${em}`,
-        date: toYmdLocal(d),
-        // demo logic only
-        isMine: a.title.startsWith("คาบเรียน") || a.status === "upcoming",
-      } satisfies Row;
+        time: safeRangeHm(startISO, endISO),
+        date: ymdFromISO(startISO),
+        kind: "activity",
+        startISO,
+        endISO,
+        slug: a.slug,
+        status: a.status,
+        dateLabel, // ⬅️ เพิ่ม
+      };
     });
-  }, [now]);
 
-  // filter out removed
-  const visibleEvents = useMemo(
-    () => events.filter((ev) => !removedIds.includes(ev.id)),
-    [events, removedIds]
-  );
-
-  const isRegistered = useCallback((ev: Row) => ev.isMine, []);
-  const buildPath = useCallback(
-    (e: Row) => (e.slug ? `/activity/${e.slug}` : `/activity/${e.id}`),
-    []
-  );
-
-  const myToday = useMemo(() => {
-    return visibleEvents
-      .filter((ev) => sameDay(parseYmd(ev.date), now) && isRegistered(ev))
-      .sort((a, b) => a.time.localeCompare(b.time));
-  }, [visibleEvents, now, isRegistered]);
-
-  const upcomingUnregistered = useMemo(() => {
-    const sodNow = startOfDay(now).getTime();
-    return visibleEvents
-      .filter((ev) => {
-        if (isRegistered(ev)) return false;
-        const d = parseYmd(ev.date);
-        const isToday = sameDay(d, now);
-        const isAfterToday = d.getTime() > sodNow;
-        if (isAfterToday) return true;
-        if (!isToday) return false;
-        const { start } = getRangeForDate(ev.date, ev.time, now);
-        return start.getTime() > now.getTime();
-      })
-      .sort((a, b) =>
-        a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)
+    return mapped
+      .filter((r) => new Date(r.endISO || r.startISO).getTime() >= S)
+      .filter((r) => !todayActivityIds.has(r.id))
+      .filter((r) => !addedIds.includes(r.id))
+      .sort(
+        (a, b) =>
+          new Date(a.startISO).getTime() - new Date(b.startISO).getTime() ||
+          a.title.localeCompare(b.title)
       );
-  }, [visibleEvents, now, isRegistered]);
-
-  // delete -> persist & optimistic UI
-  const handleDeleteFromMonthlyAndDaily = useCallback((id: string) => {
-    addRemovedId(id);
-    setRemovedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-  }, []);
+  }, [upcomingThumbs, dateStr, todayRows, addedIds]);
 
   return (
-    <main className="bg-[#f6f1e7] flex flex-col items-center p-6 min-h-screen">
-      <header className="w-full flex flex-col items-end text-[#730217] mb-6">
-        <h1 className="text-2xl sm:text-3xl font-semibold">ตารางชีวิตประจำวัน</h1>
-        <p className="font-bold text-xl sm:text-4xl">
-          <TimeLabel />
-        </p>
-      </header>
-
-      <div className="w-full max-w-5xl bg-black rounded-lg p-4">
-        <section className="bg-white rounded-md p-6">
-          {/* ===== Desktop Table: ของฉัน ===== */}
-          <div className="hidden sm:grid mb-2 grid-cols-[25%_25%_25%_25%] items-center">
-            <h2 className="font-bold text-xl sm:text-2xl text-black text-center">กิจกรรมของฉัน</h2>
-            <span className="font-bold text-xl sm:text-2xl text-black text-center">กำหนดการ</span>
-            <span className="font-bold text-xl sm:text-2xl text-black text-center">ระยะเวลา</span>
-            <span className="font-bold text-xl sm:text-2xl text-black text-center">ดำเนินการ</span>
+    <main className="bg-primary min-h-screen">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <header className="w-full text-main mb-6 text-center">
+          <h1 className="text-2xl sm:text-3xl font-semibold">
+            ตารางชีวิตประจำวัน
+          </h1>
+          <p className="font-bold text-xl sm:text-4xl">
+            <TimeLabel dateYmd={dateStr} showClock={false} />
+          </p>
+          <div className="w-full mt-3">
+            <DateNav value={dateStr} onChange={setDateQuery} />
           </div>
+        </header>
 
-          <table className="hidden sm:table w-full text-sm table-fixed border-collapse overflow-hidden">
-            <tbody>
-              {myToday.length === 0 ? (
-                <tr>
-                  <td className="p-4 text-center text-gray-500" colSpan={4}>
-                    ยังไม่มีกิจกรรมของฉันในวันนี้
-                  </td>
-                </tr>
-              ) : (
-                myToday.map((ev, idx) => {
-                  const d = parseYmd(ev.date);
-                  return (
-                    <tr
-                      key={ev.id}
-                      className={`${idx % 2 === 0 ? "bg-[#FFC26D]" : "bg-[#FF975E]"} hover:brightness-105 transition`}
-                    >
-                      <td className="p-3 border font-medium text-center">
-                        <Link href={buildPath(ev)} className="hover:underline truncate">
-                          {ev.title}
-                        </Link>
-                      </td>
-                      <td className="p-3 border text-center">
-                        <time>{formatThaiDate(d)}</time>
-                      </td>
-                      <td className="p-3 border text-center">
-                        <time>{ev.time}</time>
-                      </td>
-                      <td className="p-3 border text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <MoreInfoButton href={buildPath(ev)} size="sm" variant="primary" />
-                          <DeleteButton
-                            activityId={ev.id}
-                            onDelete={handleDeleteFromMonthlyAndDaily}
-                            size="sm"
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+        <section className="bg-white rounded-xl p-6">
+          {/* Loading / Error */}
+          {loading && (
+            <div className="text-center py-8 text-gray-500">
+              กำลังโหลดข้อมูล…
+            </div>
+          )}
+          {!loading && error && (
+            <div className="text-center py-8 text-red-600">
+              โหลดข้อมูลไม่สำเร็จ: {error}
+            </div>
+          )}
 
-          {/* Mobile Accordion: ของฉัน */}
-          <div className="sm:hidden mt-4">
-            <h2 className="font-bold text-xl text-black mb-2">กิจกรรมของฉัน</h2>
-            {myToday.length === 0 ? (
-              <p className="text-gray-500 text-center">
-                ยังไม่มีกิจกรรมของฉันในวันนี้
-              </p>
+          {/* Desktop: ตารางบน */}
+          <HeaderGrid title="กิจกรรมของฉัน" />
+          <div className="hidden sm:grid gap-2">
+            {!loading && todayRows.length === 0 ? (
+              <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
+                ยังไม่มีรายการในวันนี้
+              </div>
             ) : (
-              myToday.map((ev, idx) => (
-                <AccordionItem
+              todayRows.map((ev) => (
+                <RowCard
                   key={ev.id}
-                  ev={ev}
-                  onDelete={handleDeleteFromMonthlyAndDaily}
-                  bgColor={idx % 2 === 0 ? "bg-[#FFC26D]" : "bg-[#FF975E]"} // เพิ่มเพื่อให้สีเหมือน desktop
+                  row={ev}
+                  onDelete={(id) => handleDelete(id, ev.title, ev.kind)}
+                  enableDelete
                 />
               ))
             )}
           </div>
 
-          {/* ===== Desktop Table: กิจกรรมเร็ว ๆ นี้ ===== */}
+          {/* Mobile: ตารางบน */}
+          <div className="sm:hidden mt-4">
+            {loading ? (
+              <p className="text-gray-500 text-center">กำลังโหลดข้อมูล…</p>
+            ) : todayRows.length === 0 ? (
+              <p className="text-gray-500 text-center">
+                ยังไม่มีรายการในวันนี้
+              </p>
+            ) : (
+              <>
+                <h2 className="text-center text-bf-btn font-semibold mb-2">
+                  กิจกรรมของฉัน
+                </h2>
+                <ul role="list" className="space-y-0">
+                  {todayRows.map((ev) => (
+                    <li key={ev.id}>
+                      <MobileRow
+                        row={ev}
+                        onDelete={(id) => handleDelete(id, ev.title, ev.kind)}
+                        bgColor={rowBg(ev.kind)}
+                        enableDelete
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+
+          {/* Desktop: ตารางล่าง */}
           <div className="w-full mt-10">
-            <div className="hidden sm:grid mb-2 grid-cols-[25%_25%_25%_25%] items-center">
-              <h2 className="font-bold text-xl sm:text-2xl text-black text-center">กิจกรรมเร็ว ๆ นี้</h2>
-              <span className="font-bold text-xl sm:text-2xl text-black text-center">กำหนดการ</span>
-              <span className="font-bold text-xl sm:text-2xl text-black text-center">ระยะเวลา</span>
-              <span className="font-bold text-xl sm:text-2xl text-black text-center">ดำเนินการ</span>
-            </div>
-
-            {/* Desktop Table */}
-            <table className="hidden sm:table w-full text-sm table-fixed border-collapse overflow-hidden">
-              <colgroup>
-                <col style={{ width: "25%" }} />
-                <col style={{ width: "25%" }} />
-                <col style={{ width: "25%" }} />
-                <col style={{ width: "25%" }} />
-              </colgroup>
-              <thead className="sr-only">
-                <tr>
-                  <th>ชื่อกิจกรรม</th>
-                  <th>วัน</th>
-                  <th>เวลา</th>
-                  <th>ดำเนินการ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {upcomingUnregistered.length === 0 ? (
-                  <tr>
-                    <td className="p-4 text-center text-gray-500" colSpan={4}>
-                      ยังไม่มีกิจกรรมที่ยังไม่ได้ลงทะเบียน
-                    </td>
-                  </tr>
-                ) : (
-                  upcomingUnregistered.map((ev, idx) => {
-                    const d = parseYmd(ev.date);
-                    return (
-                      <tr
-                        key={ev.id}
-                        className={`${idx % 2 === 0 ? "bg-[#8BD8FF]" : "bg-[#8CBAFF]"} hover:brightness-105 transition`}
-                      >
-                        <td className="p-3 border text-center">
-                          <Link href={buildPath(ev)} className="hover:underline truncate">
-                            {ev.title}
-                          </Link>
-                        </td>
-                        <td className="p-3 border text-center">
-                          <time>{formatThaiDate(d)}</time>
-                        </td>
-                        <td className="p-3 border text-center">
-                          <time>{ev.time}</time>
-                        </td>
-                        <td className="p-3 border text-center">
-                          {/* NOTE: avoid nesting interactive elements */}
-                          <MoreInfoButton href={buildPath(ev)} size="sm" variant="primary" />
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-
-            {/* Mobile : กิจกรรมเร็ว ๆ นี้ */}
-            <div className="sm:hidden mt-4">
-              <h2 className="font-bold text-xl text-black mb-2">กิจกรรมเร็ว ๆ นี้</h2>
-              {upcomingUnregistered.length === 0 ? (
-                <p className="text-gray-500 text-center">
-                  ยังไม่มีกิจกรรมที่ยังไม่ได้ลงทะเบียน
-                </p>
+            <HeaderGrid title="กิจกรรมแนะนำ" />
+            <div className="hidden sm:grid gap-2">
+              {!thumbsLoading && thumbsError && (
+                <div className="text-center text-red-600 p-4 bg-red-50 rounded-lg">
+                  {thumbsError}
+                </div>
+              )}
+              {thumbsLoading ? (
+                <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
+                  กำลังโหลดกิจกรรมแนะนำ…
+                </div>
+              ) : upcomingRows.length === 0 ? (
+                <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
+                  ยังไม่มีกิจกรรมหลังจากวันนี้
+                </div>
               ) : (
-                upcomingUnregistered.map((ev, idx) => (
-                  <AccordionItem
-                    key={ev.id}
-                    ev={ev}
-                    bgColor={idx % 2 === 0 ? "bg-[#8BD8FF]" : "bg-[#8CBAFF]"} // 💙 ใช้สีฟ้าเหมือน desktop
-                  />
+                upcomingRows.map((ev) => (
+                  <RowCard key={ev.id} row={ev} enableDelete={false} />
                 ))
               )}
             </div>
           </div>
+
+          {/* Mobile: ตารางล่าง */}
+          <div className="sm:hidden mt-4">
+            {!thumbsLoading && thumbsError && (
+              <p className="text-center text-red-600">{thumbsError}</p>
+            )}
+            {thumbsLoading ? (
+              <p className="text-gray-500 text-center">
+                กำลังโหลดกิจกรรมแนะนำ…
+              </p>
+            ) : upcomingRows.length === 0 ? (
+              <p className="text-gray-500 text-center">
+                ยังไม่มีกิจกรรมหลังจากวันนี้
+              </p>
+            ) : (
+              <>
+                <h2 className="text-center text-bf-btn font-semibold mb-2">
+                  กิจกรรมแนะนำ
+                </h2>
+                <ul role="list" className="space-y-0">
+                  {upcomingRows.map((ev) => (
+                    <li key={ev.id}>
+                      <MobileRow
+                        row={ev}
+                        onDelete={(id) => handleDelete(id, ev.title, ev.kind)}
+                        bgColor={rowBg("activity")}
+                        enableDelete={false}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+
+          {/* Recycle Bin */}
+          <div className="mt-6 w-full flex sm:justify-end">
+            <RecycleBinWidget
+              entries={removedEntries}
+              loading={loading}
+              onRestoreOne={restoreOne}
+              onRestoreAll={restoreAll}
+              className="w-full sm:w-auto"
+              title="แสดงรายการที่ถูกลบ"
+            />
+          </div>
         </section>
       </div>
-
     </main>
   );
 }

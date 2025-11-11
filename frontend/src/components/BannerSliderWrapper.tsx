@@ -1,9 +1,15 @@
+// src/components/BannerSliderWrapper.tsx
 "use client";
 
 import dynamic from "next/dynamic";
+import type { BannerSliderProps } from "./BannerSlider";
 
-const BannerSlider = dynamic(() => import("./BannerSlider"), { ssr: false });
+// ✅ ใช้ generic เป็น BannerSliderProps และ .then(m => m.default)
+const BannerSlider = dynamic<BannerSliderProps>(
+  () => import("./BannerSlider").then((m) => m.default),
+  { ssr: false }
+);
 
 export default function BannerSliderWrapper() {
-  return <BannerSlider />;
+  return <BannerSlider source="mine" />;
 }

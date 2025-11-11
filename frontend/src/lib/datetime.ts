@@ -1,26 +1,12 @@
+// src/lib/datetime.ts
+
 export const THAI_MONTHS = [
-  "มกราคม",
-  "กุมภาพันธ์",
-  "มีนาคม",
-  "เมษายน",
-  "พฤษภาคม",
-  "มิถุนายน",
-  "กรกฎาคม",
-  "สิงหาคม",
-  "กันยายน",
-  "ตุลาคม",
-  "พฤศจิกายน",
-  "ธันวาคม",
+  "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
+  "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
 ] as const;
 
 export const THAI_DAYS = [
-  "อาทิตย์",
-  "จันทร์",
-  "อังคาร",
-  "พุธ",
-  "พฤหัสบดี",
-  "ศุกร์",
-  "เสาร์",
+  "วันอาทิตย์","วันจันทร์","วันอังคาร","วันพุธ","วันพฤหัสบดี","วันศุกร์","วันเสาร์",
 ] as const;
 
 export const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -28,9 +14,53 @@ export const pad2 = (n: number) => String(n).padStart(2, "0");
 export const toYmdLocal = (d: Date) =>
   `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
+/* =================== ISO Normalizer (Bangkok) =================== */
+// รองรับเคสไม่มี timezone/ไม่มีวินาที/มีช่องว่าง ให้ตีความเป็น Asia/Bangkok (+07:00)
+const ISO_NO_TZ_RE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?$/;
+const HAS_TZ_RE = /([Zz]|[+\-]\d{2}:\d{2})$/;
+
+export function normalizeIsoToBangkok(iso: string, tz = "+07:00"): string {
+  let s = (iso ?? "").trim().replace(" ", "T");
+  if (!HAS_TZ_RE.test(s)) {
+    if (ISO_NO_TZ_RE.test(s)) {
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) s += ":00";
+      s += tz;
+    }
+  }
+  return s;
+}
+
+/* =================== Formatters (cache ระดับโมดูล) =================== */
+const FMT_TH_DATE = new Intl.DateTimeFormat("th-TH", {
+  timeZone: "Asia/Bangkok",
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+});
+
+const FMT_TH_TIME = new Intl.DateTimeFormat("th-TH", {
+  timeZone: "Asia/Bangkok",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+const FMT_EN_GB_YMD = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Asia/Bangkok",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/* =================== Basic date helpers =================== */
+
+const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 export const parseYmd = (ymd: string) => {
-  const [y, m, d] = ymd.split("-").map(Number);
-  return new Date(y, (m ?? 1) - 1, d ?? 1, 0, 0, 0, 0);
+  const s = (ymd ?? "").trim();
+  if (!YMD_RE.test(s)) return new Date(NaN);
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d, 0, 0, 0, 0);
 };
 
 export const startOfDay = (d: Date) => {
@@ -39,8 +69,31 @@ export const startOfDay = (d: Date) => {
   return x;
 };
 
+export const endOfDay = (d: Date) => {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+};
+
 export const sameDay = (a: Date, b: Date) =>
   startOfDay(a).getTime() === startOfDay(b).getTime();
+
+export const sameMonth = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+
+export const addDays = (d: Date, n: number) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+};
+
+export const clampToDayRange = (start: Date, end: Date, day: Date) => {
+  const s = startOfDay(day).getTime();
+  const e = endOfDay(day).getTime();
+  const S = Math.max(start.getTime(), s);
+  const E = Math.min(end.getTime(), e);
+  return { start: new Date(S), end: new Date(E) };
+};
 
 export const getRangeForDate = (
   dateYmd: string,
@@ -68,6 +121,8 @@ export const formatThaiDateLabel = (d: Date) =>
     d.getFullYear() + 543
   }`;
 
+/* =================== Time range helpers =================== */
+
 export const startMinutes = (timeRange: string): number => {
   const [s] = timeRange.split("-");
   const [hh, mm] = (s ?? "00:00").split(":").map(Number);
@@ -86,6 +141,8 @@ export const splitTimeRange = (range: string) => {
 export const toIsoWithOffset = (ymd: string, hm: string, tz = "+07:00") =>
   `${ymd}T${hm}:00${tz}`;
 
+/* =================== Thai/Buddhist date formats =================== */
+
 export const toBuddhistYmd = (d: Date) =>
   `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`;
 
@@ -103,14 +160,21 @@ export const formatThaiDate = (d: Date, withTime = false) => {
   return `${date} • ${time}`;
 };
 
-export const sameMonth = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
-
-export const addDays = (d: Date, n: number) => {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
+export const formatDateThaiFromIso = (iso?: string | null) => {
+  if (!iso) return null;
+  const dt = new Date(normalizeIsoToBangkok(iso));
+  if (Number.isNaN(dt.getTime())) return null;
+  return FMT_TH_DATE.format(dt);
 };
+
+export const formatTimeThaiFromIso = (iso?: string | null) => {
+  if (!iso) return null;
+  const dt = new Date(normalizeIsoToBangkok(iso));
+  if (Number.isNaN(dt.getTime())) return null;
+  return FMT_TH_TIME.format(dt) + " น.";
+};
+
+/* =================== Compare helpers =================== */
 
 export const compareByStartTimeRange = (
   aTimeRange: string,
@@ -118,47 +182,30 @@ export const compareByStartTimeRange = (
 ) => startMinutes(aTimeRange) - startMinutes(bTimeRange);
 
 export const compareByIsoStart = (aIso: string, bIso: string) =>
-  new Date(aIso).getTime() - new Date(bIso).getTime();
+  new Date(normalizeIsoToBangkok(aIso)).getTime() -
+  new Date(normalizeIsoToBangkok(bIso)).getTime();
 
-export const formatDateThaiFromIso = (iso?: string | null) => {
-  if (!iso) return null;
-  const dt = new Date(iso);
-  if (Number.isNaN(dt.getTime())) return null;
-  return new Intl.DateTimeFormat("th-TH", {
-    timeZone: "Asia/Bangkok",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(dt);
-};
+export const compareByIsoEnd = (aIso: string, bIso: string) =>
+  new Date(normalizeIsoToBangkok(aIso)).getTime() -
+  new Date(normalizeIsoToBangkok(bIso)).getTime();
 
-export const formatTimeThaiFromIso = (iso?: string | null) => {
-  if (!iso) return null;
-  const dt = new Date(iso);
-  if (Number.isNaN(dt.getTime())) return null;
-  return (
-    new Intl.DateTimeFormat("th-TH", {
-      timeZone: "Asia/Bangkok",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(dt) + " น."
-  );
-};
-
+/* =================== Calendar grid =================== */
 /**
  * สร้างกริดปฏิทินของเดือนที่ระบุ
  * @param year  ค.ศ. เช่น 2025
  * @param month index แบบ JS (0=ม.ค., 11=ธ.ค.)
  * @param options.weekStartsOn  0=อาทิตย์, 1=จันทร์ (ค่าเริ่มต้น: 1 = จันทร์)
+ * @param options.padTo6Weeks เติม null ให้ครบ 42 ช่อง (7x6) เพื่อ UI สม่ำเสมอ
  * @returns array ของตัวเลขวันที่ (1..n) คั่นด้วย null ตำแหน่งก่อนวันแรก
  */
 export function generateCalendarGrid(
   year: number,
   month: number,
-  options: { weekStartsOn?: 0 | 1 } = {}
+  options: { weekStartsOn?: 0 | 1; padTo6Weeks?: boolean } = {}
 ) {
   const weekStartsOn = options.weekStartsOn ?? 1; // Monday-first เป็นดีฟอลต์
+  const padTo6Weeks = options.padTo6Weeks ?? false;
+
   const firstDay = new Date(year, month, 1).getDay(); // 0=Sun..6=Sat
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -168,5 +215,147 @@ export function generateCalendarGrid(
   const grid: (number | null)[] = [];
   for (let i = 0; i < offset; i++) grid.push(null);
   for (let day = 1; day <= daysInMonth; day++) grid.push(day);
+
+  if (padTo6Weeks) {
+    const target = 42; // 7 cols * 6 rows
+    while (grid.length < target) grid.push(null);
+  }
   return grid;
 }
+
+export type YMD0 = { y: number; m0: number; d: number }; // m0 = 0..11
+
+// คืน {y, m0, d} ของเวลาจาก ISO ในเขต Asia/Bangkok
+export function ymdInBangkok(iso?: string | null): YMD0 | null {
+  if (!iso || typeof iso !== "string") return null;
+  const dt = new Date(normalizeIsoToBangkok(iso));
+  if (Number.isNaN(dt.valueOf())) return null;
+
+  const parts = FMT_EN_GB_YMD.formatToParts(dt);
+  const get = (t: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === t)?.value;
+
+  const y = Number(get("year"));
+  const m = Number(get("month"));
+  const d = Number(get("day"));
+  if (!y || !m || !d) return null;
+
+  return { y, m0: m - 1, d };
+}
+
+/* =================== Convenience helpers (ย้ายจาก utils/time.ts) =================== */
+
+export function toHm(iso: string): string {
+  const t = new Date(normalizeIsoToBangkok(iso));
+  if (Number.isNaN(t.valueOf())) return "—";
+  const hh = String(t.getHours()).padStart(2, "0");
+  const mm = String(t.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+export function safeRangeHm(startISO: string, endISO?: string | null): string {
+  const start = new Date(normalizeIsoToBangkok(startISO));
+  const end = endISO ? new Date(normalizeIsoToBangkok(endISO)) : null;
+  if (Number.isNaN(start.valueOf())) return "—";
+  if (end && !Number.isNaN(end.valueOf())) return `${toHm(startISO)}-${toHm(endISO!)}`;
+  return `${toHm(startISO)}-—`;
+}
+
+export function ymdFromISO(iso: string) {
+  return toYmdLocal(new Date(normalizeIsoToBangkok(iso)));
+}
+
+export function formatThaiRangeFromISO(startISO: string, endISO: string) {
+  const s = new Date(normalizeIsoToBangkok(startISO));
+  const e = new Date(normalizeIsoToBangkok(endISO));
+  if (Number.isNaN(s.valueOf()) || Number.isNaN(e.valueOf())) return "—";
+
+  const sd = s.getDate();
+  const ed = e.getDate();
+  const sm = THAI_MONTHS[s.getMonth()];
+  const em = THAI_MONTHS[e.getMonth()];
+  const sy = s.getFullYear() + 543;
+  const ey = e.getFullYear() + 543;
+
+  const sameDay =
+    s.getFullYear() === e.getFullYear() &&
+    s.getMonth() === e.getMonth() &&
+    s.getDate() === e.getDate();
+
+  if (sameDay) {
+    // ✅ วันเดียวกัน => "11 พฤศจิกายน 2568"
+    return `${sd} ${sm} ${sy}`;
+  }
+
+  const sameMonth =
+    s.getFullYear() === e.getFullYear() && s.getMonth() === e.getMonth();
+
+  // ต่างวันแต่เดือนเดียวกัน => "11–13 พฤศจิกายน 2568"
+  if (sameMonth) return `${sd}–${ed} ${sm} ${sy}`;
+
+  // คนละเดือน/คนละปี => "30 พฤศจิกายน 2568 – 2 ธันวาคม 2568"
+  return `${sd} ${sm} ${sy} – ${ed} ${em} ${ey}`;
+}
+
+/** คืนค่าเช่น "10 พฤศจิกายน 2568" (ไม่มีชื่อวัน) */
+export function formatThaiNoWeekday(d: Date): string {
+  return d.toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+export function isSameYmd(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+/** ช่วงวันที่แบบไม่มีชื่อวัน */
+export function formatThaiRangeNoWeekday(startISO: string, endISO: string): string {
+  const s = new Date(startISO);
+  const e = new Date(endISO);
+  if (isNaN(s.valueOf()) || isNaN(e.valueOf())) return "—";
+  return isSameYmd(s, e)
+    ? formatThaiNoWeekday(s)
+    : `${formatThaiNoWeekday(s)} - ${formatThaiNoWeekday(e)}`;
+}
+
+/* ===== เพิ่มส่วน "มีชื่อวัน" ===== */
+
+const TH_WEEKDAYS_LONG = ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"] as const;
+const TH_WEEKDAYS_SHORT = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."] as const;
+
+type WeekdayStyle = "long" | "short";
+
+/** คืนค่า "วันจันทร์" หรือ "จ." ตาม style */
+function thaiWeekdayLabel(d: Date, style: WeekdayStyle = "long"): string {
+  const i = d.getDay();
+  return style === "long" ? `วัน${TH_WEEKDAYS_LONG[i]}` : TH_WEEKDAYS_SHORT[i];
+}
+
+/** เช่น "วันพุธ 10 พฤศจิกายน 2568" หรือ "พ." 10 พ.ย. 2568 (ถ้าไปปรับเดือนให้ย่อเอง) */
+export function formatThaiWithWeekday(d: Date, style: WeekdayStyle = "long"): string {
+  return `${thaiWeekdayLabel(d, style)} ${formatThaiNoWeekday(d)}`;
+}
+
+/** ช่วงวันที่แบบมีชื่อวัน
+ *  - วันเดียว: "วันศุกร์ 15 พฤศจิกายน 2568"
+ *  - ต่างวัน:  "วันศุกร์ 15 พฤศจิกายน 2568 - วันอาทิตย์ 17 พฤศจิกายน 2568"
+ */
+export function formatThaiRangeWithWeekday(
+  startISO: string,
+  endISO: string,
+  style: WeekdayStyle = "long"
+): string {
+  const s = new Date(startISO);
+  const e = new Date(endISO);
+  if (isNaN(s.valueOf()) || isNaN(e.valueOf())) return "—";
+  return isSameYmd(s, e)
+    ? formatThaiWithWeekday(s, style)
+    : `${formatThaiWithWeekday(s, style)} - ${formatThaiWithWeekday(e, style)}`;
+}
+
