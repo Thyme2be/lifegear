@@ -1,9 +1,17 @@
 "use client";
 
+"use client";
+
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiRoutes } from "@/lib/apiRoutes";
 import AddToLifeModal from "@/components/ui/AddToLifeModal";
+import { toast } from "react-toastify/unstyled";
+import {
+  buttonClasses,
+  type BtnSize,
+  type BtnVariant,
+} from "@/lib/ui/buttonStyles"; // ⬅️ เพิ่ม
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -18,18 +26,12 @@ function parseJsonSafe<T>(text: string): T | null {
   }
 }
 function getErrorMessage(e: unknown): string {
-  if (e instanceof Error) return e.message;
-  if (typeof e === "string") return e;
-  return getThaiErrorMessage(e);
+  // บังคับให้ผ่านตัวแปลไทยเสมอ
+  const raw = e instanceof Error ? e.message : typeof e === "string" ? e : "";
+  return getThaiErrorMessage(raw);
 }
 
-function getThaiErrorMessage(e: unknown): string {
-  // ถ้าแบ็คเอนด์ส่งไทยมาอยู่แล้ว ก็ส่งต่อได้เลย
-  const raw =
-    e instanceof Error ? e.message :
-    typeof e === "string" ? e :
-    "";
-
+function getThaiErrorMessage(raw: string): string {
   const msg = (raw || "").toLowerCase().trim();
 
   // สถานะทั่วไป/ข้อความจากเบราว์เซอร์
@@ -37,16 +39,28 @@ function getThaiErrorMessage(e: unknown): string {
   if (msg.includes("failed to fetch") || msg.includes("network"))
     return "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่อีกครั้ง";
   if (msg.includes("timeout")) return "หมดเวลารอการตอบสนอง กรุณาลองใหม่";
-  if (msg.includes("unauthorized") || msg.includes("401")) return "กรุณาเข้าสู่ระบบก่อน";
-  if (msg.includes("forbidden") || msg.includes("403")) return "ไม่มีสิทธิ์ทำรายการนี้";
-  if (msg.includes("not found") || msg.includes("404")) return "ไม่พบข้อมูลที่ต้องการ";
-  if (msg.includes("conflict") || msg.includes("409")) return "คุณได้บันทึกกิจกรรมนี้ไว้แล้ว";
-  if (msg.includes("unprocessable") || msg.includes("422")) return "ข้อมูลไม่ครบถ้วนหรือไม่ถูกต้อง";
+  if (msg.includes("unauthorized") || msg.includes("401"))
+    return "กรุณาเข้าสู่ระบบก่อน";
+  if (msg.includes("forbidden") || msg.includes("403"))
+    return "ไม่มีสิทธิ์ทำรายการนี้";
+  if (msg.includes("not found") || msg.includes("404"))
+    return "ไม่พบข้อมูลที่ต้องการ";
+  if (msg.includes("conflict") || msg.includes("409"))
+    return "คุณได้บันทึกกิจกรรมนี้ไว้แล้ว";
+  if (msg.includes("unprocessable") || msg.includes("422"))
+    return "ข้อมูลไม่ครบถ้วนหรือไม่ถูกต้อง";
 
-  // ถ้าเป็นข้อความไทยอยู่แล้ว ก็คืนค่าตามเดิม
+  // ⬇️ เคสข้อความอังกฤษที่ BE มักส่งมา
+  if (
+    /already added|already exists|duplicate|you have already added/i.test(raw)
+  ) {
+    return "คุณได้บันทึกกิจกรรมนี้ไว้แล้ว";
+  }
+
+  // ถ้าเป็นข้อความไทยอยู่แล้ว ก็คืนกลับ
   if (/[ก-๙]/.test(raw)) return raw;
 
-  // ค่าเริ่มต้นเป็นไทย
+  // ค่าปริยาย
   return raw ? `เกิดข้อผิดพลาด: ${raw}` : "เกิดข้อผิดพลาดไม่ทราบสาเหตุ";
 }
 
@@ -70,6 +84,10 @@ export default function AddToLifeButton({
   endAt,
   onDone,
   forceDisabled = false,
+  className,
+  fullWidth = false,
+  size = "sm", // ⬅️ เพิ่ม: ให้ค่าเริ่มต้นเท่ากับปุ่มตัวหนังสือ
+  variant = "primary", // ⬅️ เพิ่ม: ให้โทนสีเดียวกับ MoreInfo แบบ text
 }: {
   activityId: string;
   startAt?: string;
@@ -78,12 +96,28 @@ export default function AddToLifeButton({
     result: { ok: true; id: string } | { ok: false; error: unknown }
   ) => void;
   forceDisabled?: boolean;
+  className?: string;
+  fullWidth?: boolean;
+  size?: BtnSize; // ⬅️ เพิ่ม
+  variant?: BtnVariant; // ⬅️ เพิ่ม
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // ปิดด้วย ESC ตอน modal เปิด (เสริม UX)
+  // ⬇️ ใช้ buttonClasses เหมือน MoreInfoButton (โทน/ขนาดจะตรงกัน)
+  const btnClasses = buttonClasses({
+    size,
+    variant,
+    className: [
+      fullWidth ? "w-full" : "w-auto",
+      // interaction + disabled states ให้เหมือนกัน
+      "transition hover:scale-[1.03] active:scale-[0.98] cursor-pointer",
+      "disabled:bg-gray-400 disabled:text-gray-100 disabled:cursor-not-allowed disabled:pointer-events-none",
+      className ?? "",
+    ].join(" "),
+  });
+
   useEffect(() => {
     if (!showConfirm) return;
     const onKey = (e: KeyboardEvent) =>
@@ -108,7 +142,9 @@ export default function AddToLifeButton({
 
   const doAdd = useCallback(async () => {
     const fail = (err: unknown) => {
-      onDone?.({ ok: false, error: err });
+      const msg = getErrorMessage(err);
+      toast.error(msg);
+      onDone?.({ ok: false, error: msg });
     };
 
     try {
@@ -155,7 +191,7 @@ export default function AddToLifeButton({
       onDone?.({ ok: true, id: normalizedId });
     } catch (e) {
       console.error(e);
-      fail(getErrorMessage(e));
+      fail(e);
     } finally {
       setLoading(false);
       setShowConfirm(false);
@@ -168,11 +204,7 @@ export default function AddToLifeButton({
         type="button"
         onClick={() => !disabled && setShowConfirm(true)}
         disabled={disabled}
-        className="  px-6 py-3 rounded-full 
-    bg-bf-btn hover:bg-btn-hover cursor-pointer
-    disabled:bg-gray-400 disabled:text-gray-100
-    disabled:cursor-not-allowed 
-    text-white font-bold shadow-md transition"
+        className={btnClasses}
         title={disabled ? "กิจกรรมนี้สิ้นสุดไปแล้ว" : undefined}
         aria-disabled={disabled}
       >

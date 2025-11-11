@@ -1,4 +1,3 @@
-// src/components/TimeLabel.tsx
 "use client";
 import React, { useMemo } from "react";
 import { formatThaiDateLabel, parseYmd } from "@/lib/datetime";
@@ -12,18 +11,19 @@ type Props = {
   className?: string;
 };
 
-export default function TimeLabel({ dateYmd, showClock = true, className }: Props) {
+export default function TimeLabel({
+  dateYmd,
+  showClock = true,
+  className,
+}: Props) {
   const now = useNow(1000);
 
   const text = useMemo(() => {
-    // วันที่: ใช้ dateYmd (ถ้ามี) ไม่งั้นใช้ now
     const baseDate = dateYmd ? parseYmd(dateYmd) : now;
     const dateLabel = formatThaiDateLabel(baseDate);
 
     if (!showClock) return dateLabel;
-
-    // รูปแบบเหมือนในภาพ: วันที่ • HH:MM:SS
-    return `วัน${dateLabel}`;
+    return `${dateLabel}`;
   }, [dateYmd, now, showClock]);
 
   return <span className={className}>{text}</span>;

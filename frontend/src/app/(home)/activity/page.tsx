@@ -78,7 +78,6 @@ export default function ActivityPage() {
 
           {/* Content */}
           <section className="lg:col-span-3 space-y-6">
-            {/* แสดงเฉพาะเมื่อมีรายการ เพื่อไม่ให้มีช่องว่างเปล่า */}
             {filteredActivities.length > 0 && (
               <ActivityCarousel activities={filteredActivities} />
             )}

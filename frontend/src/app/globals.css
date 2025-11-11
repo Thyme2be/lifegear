@@ -109,8 +109,20 @@ body {
   position: relative;
   display: block;
 }
+
+.slick-dots {
+  bottom: 12px !important;
+}
+
 .slick-dots li button:before {
-  color: white;
+  color: white !important;
+  font-size: 10px; /* ปรับขนาดได้ตามต้องการ */
+  opacity: 0.9;
+}
+
+.slick-dots li.slick-active button:before {
+  color: #f1d500 !important; /* สีหลักของ LifeGear */
+  opacity: 1;
 }
 
 .heading {

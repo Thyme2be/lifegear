@@ -3,12 +3,13 @@
 
 import React from "react";
 import type { CalendarEvent } from "@/types/calendar";
+import { rowBg } from "./daily/rowBg";
 
 type Props = {
   day: number;
   events: CalendarEvent[];
-  highlight: boolean;                 // วันนี้
-  selected?: boolean;                 // วันถูกเลือก
+  highlight: boolean; // วันนี้
+  selected?: boolean; // วันถูกเลือก
   onShowMore?: (day: number, events: CalendarEvent[]) => void;
   onSelectDay?: (day: number) => void;
 };
@@ -20,9 +21,10 @@ function cx(...parts: Array<string | false | undefined>) {
 }
 
 const EventPill = React.memo(function EventPill({ ev }: { ev: CalendarEvent }) {
-  const isClass = ev.kind === "class";
-  const bgColor = isClass ? "bg-[#A3BBEE]" : "bg-[#FFCA64]";
-  const textColor = isClass ? "text-[#002B7A]" : "text-[#5A2E00]";
+  const bgColor = rowBg(ev.kind); // ✅ ใช้สีเดียวกับแถวในตาราง
+  const textColor =
+    ev.kind === "activity" ? "text-[#5A2E00]" : "text-[#002B7A]";
+
   return (
     <div
       className={cx(
@@ -66,14 +68,6 @@ function CalendarCellBase({
     [selectThisDay]
   );
 
-  const handleShowMore = React.useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      onShowMore?.(day, events);
-    },
-    [onShowMore, day, events]
-  );
-
   const ariaLabel = React.useMemo(() => {
     const base = `วันที่ ${day} มีเหตุการณ์ ${events.length} รายการ`;
     if (highlight && selected) return `${base} (วันนี้, ถูกเลือก)`;
@@ -112,9 +106,8 @@ function CalendarCellBase({
         {hasMore && (
           <button
             type="button"
-            onClick={handleShowMore}
             title={`ดูทั้งหมด (+${moreCount})`}
-            className="w-full text-left text-[10px] sm:text-xs px-1 rounded truncate font-semibold bg-[#74E3B3] text-[#053b2b] focus:outline-none focus:ring-2 focus:ring-[#F1D500]/60"
+            className="w-full text-left text-[10px] sm:text-xs px-1 rounded truncate font-semibold bg-[#74E3B3] text-[#053b2b] cursor-pointer"
             aria-label={`เหตุการณ์เพิ่มเติมอีก ${moreCount} รายการ กดเพื่อดูทั้งหมด`}
           >
             +{moreCount} รายการ

@@ -1,4 +1,3 @@
-// app/(home)/daily/page.tsx
 "use client";
 import React, { useMemo, useState } from "react";
 import { useNow } from "@/hooks/useNow";
@@ -7,109 +6,33 @@ import { apiRoutes } from "@/lib/apiRoutes";
 import RecycleBinWidget from "@/components/RecycleBinWidget";
 import DateNav from "@/components/DateNav";
 import TimeLabel from "@/components/TimeLabel";
-import DailyActionCell from "@/components/DailyActionCell";
 import type { CalendarEvent } from "@/types/calendar";
 import type { DailyRow as Row } from "@/types/viewmodels";
 import { useDateQuery } from "@/hooks/useDateQuery";
 import { useAddedIds, useRemovedBin } from "@/hooks/useLocalIds";
 import { useUpcomingThumbs } from "@/hooks/useUpcomingThumbs";
+import { rowBg } from "@/components/daily/rowBg";
+import HeaderGrid from "@/components/daily/HeaderGrid";
+import MobileRow from "@/components/daily/MobileRow";
+import RowCard from "@/components/daily/RowCard";
 
 import {
   parseYmd,
   toHm,
   safeRangeHm,
   ymdFromISO,
-  formatThaiDate,
   startOfDay,
   endOfDay,
   formatThaiRangeFromISO,
+  isSameYmd,
+  normalizeIsoToBangkok,
+  formatThaiNoWeekday,
 } from "@/lib/datetime";
-
-const rowBg = (kind: Row["kind"], index: number) =>
-  kind === "activity"
-    ? index % 2 === 0
-      ? "bg-[#FFC26D]"
-      : "bg-[#FF975E]"
-    : index % 2 === 0
-    ? "bg-[#8BD8FF]"
-    : "bg-[#8CBAFF]";
-
-/** Header grid (desktop) */
-const HeaderGrid = React.memo(function HeaderGrid({ title }: { title: string }) {
-  return (
-    <div className="hidden sm:grid grid-cols-4 font-semibold text-black mb-2 normal-text">
-      <div className="text-center text-bf-btn">{title}</div>
-      <div className="text-center">กำหนดการ</div>
-      <div className="text-center">ระยะเวลา</div>
-      <div className="text-center">ดำเนินการ</div>
-    </div>
-  );
-});
-
-function MobileRow({
-  row,
-  bgColor,
-  onDelete,
-  enableDelete = true,
-}: {
-  row: Row;
-  bgColor: string;
-  onDelete: (id: string) => void;
-  enableDelete?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const d = parseYmd(row.date);
-  const panelId = `row-panel-${row.id}`;
-  const btnId = `row-btn-${row.id}`;
-
-  return (
-    <div className={`border rounded-md mb-3 overflow-hidden sm:hidden ${bgColor}`}>
-      <button
-        id={btnId}
-        className="w-full px-4 py-3 bg-opacity-80 flex justify-between items-center font-semibold"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-controls={panelId}
-      >
-        <span className="truncate">{row.title}</span>
-        <span className="text-xl text-gray-700">{open ? "▴" : "▾"}</span>
-      </button>
-
-      {open && (
-        <div
-          id={panelId}
-          role="region"
-          aria-labelledby={btnId}
-          className="px-4 py-2 bg-white space-y-2"
-        >
-          <p>
-            <span className="font-semibold">วัน: </span>
-            {formatThaiDate(d)}
-          </p>
-          <p>
-            <span className="font-semibold">เวลา: </span>
-            {row.time}
-          </p>
-
-          <DailyActionCell
-            row={row}
-            source="mine"
-            onDelete={onDelete}
-            enableDelete={enableDelete}
-            size="sm"
-            align="start"
-          />
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function DailyPage() {
   const now = useNow(1000);
   const [refreshTick, setRefreshTick] = useState(0);
 
-  // sync เมื่อยิง event lifgear:activity-added จากที่อื่น
   React.useEffect(() => {
     const handler = () => setRefreshTick((k) => k + 1);
     window.addEventListener("lifgear:activity-added", handler);
@@ -129,6 +52,7 @@ export default function DailyPage() {
   const { removedIds, removedEntries, handleDelete, restoreOne, restoreAll } =
     useRemovedBin();
   const addedIds = useAddedIds();
+
   const {
     thumbs: upcomingThumbs,
     loading: thumbsLoading,
@@ -144,6 +68,17 @@ export default function DailyPage() {
           !Number.isNaN(new Date(startISO).valueOf()) &&
           !Number.isNaN(new Date(endISO).valueOf());
         const time = valid ? `${toHm(startISO)}-${toHm(endISO)}` : "—";
+
+        // ⬇️ สร้างป้ายวันที่แบบที่ต้องการ
+        const s = new Date(normalizeIsoToBangkok(startISO));
+        const e = new Date(normalizeIsoToBangkok(endISO));
+        const dateLabel = isSameYmd(s, e)
+          ? // วันเดียว: ใช้ “10 พฤศจิกายน 2568”
+            // (ถ้าอยากมีชื่อวัน ใช้ formatThaiWithWeekday ได้)
+            formatThaiNoWeekday(s)
+          : // หลายวัน: ใช้ “22–23 พฤศจิกายน 2568”
+            formatThaiRangeFromISO(startISO, endISO);
+
         return {
           id: ev.id,
           title: ev.title,
@@ -152,6 +87,7 @@ export default function DailyPage() {
           kind: ev.kind,
           startISO,
           endISO,
+          dateLabel, // ⬅️ ส่งต่อให้การ์ดใช้
         };
       }),
     [events]
@@ -172,12 +108,16 @@ export default function DailyPage() {
 
     const classes = visible
       .filter((r) => r.kind === "class")
-      .sort((a, b) => numStart(a) - numStart(b) || a.title.localeCompare(b.title));
+      .sort(
+        (a, b) => numStart(a) - numStart(b) || a.title.localeCompare(b.title)
+      );
 
     const actsInRange = visible
       .filter((r) => r.kind === "activity")
       .filter((r) => numStart(r) <= E && numEnd(r) >= S)
-      .sort((a, b) => numStart(a) - numStart(b) || a.title.localeCompare(b.title));
+      .sort(
+        (a, b) => numStart(a) - numStart(b) || a.title.localeCompare(b.title)
+      );
 
     return [...classes, ...actsInRange];
   }, [visible, dateStr]);
@@ -188,17 +128,29 @@ export default function DailyPage() {
       todayRows.filter((r) => r.kind === "activity").map((r) => r.id)
     );
 
-    const mapped: Row[] = upcomingThumbs.map((a) => ({
-      id: a.id,
-      title: a.title,
-      time: safeRangeHm(a.start_at, a.end_at ?? null),
-      date: ymdFromISO(a.start_at),
-      kind: "activity",
-      startISO: a.start_at,
-      endISO: a.end_at ?? a.start_at,
-      slug: a.slug,
-      status: a.status,
-    }));
+    const mapped: Row[] = upcomingThumbs.map((a) => {
+      const startISO = a.start_at;
+      const endISO = a.end_at ?? a.start_at;
+
+      const s = new Date(normalizeIsoToBangkok(startISO));
+      const e = new Date(normalizeIsoToBangkok(endISO));
+      const dateLabel = isSameYmd(s, e)
+        ? formatThaiNoWeekday(s)
+        : formatThaiRangeFromISO(startISO, endISO);
+
+      return {
+        id: a.id,
+        title: a.title,
+        time: safeRangeHm(startISO, endISO),
+        date: ymdFromISO(startISO),
+        kind: "activity",
+        startISO,
+        endISO,
+        slug: a.slug,
+        status: a.status,
+        dateLabel, // ⬅️ เพิ่ม
+      };
+    });
 
     return mapped
       .filter((r) => new Date(r.endISO || r.startISO).getTime() >= S)
@@ -215,9 +167,11 @@ export default function DailyPage() {
     <main className="bg-primary min-h-screen">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         <header className="w-full text-main mb-6 text-center">
-          <h1 className="text-2xl sm:text-3xl font-semibold">ตารางชีวิตประจำวัน</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold">
+            ตารางชีวิตประจำวัน
+          </h1>
           <p className="font-bold text-xl sm:text-4xl">
-            <TimeLabel />
+            <TimeLabel dateYmd={dateStr} showClock={false} />
           </p>
           <div className="w-full mt-3">
             <DateNav value={dateStr} onChange={setDateQuery} />
@@ -226,9 +180,15 @@ export default function DailyPage() {
 
         <section className="bg-white rounded-xl p-6">
           {/* Loading / Error */}
-          {loading && <div className="text-center py-8 text-gray-500">กำลังโหลดข้อมูล…</div>}
+          {loading && (
+            <div className="text-center py-8 text-gray-500">
+              กำลังโหลดข้อมูล…
+            </div>
+          )}
           {!loading && error && (
-            <div className="text-center py-8 text-red-600">โหลดข้อมูลไม่สำเร็จ: {error}</div>
+            <div className="text-center py-8 text-red-600">
+              โหลดข้อมูลไม่สำเร็จ: {error}
+            </div>
           )}
 
           {/* Desktop: ตารางบน */}
@@ -239,38 +199,14 @@ export default function DailyPage() {
                 ยังไม่มีรายการในวันนี้
               </div>
             ) : (
-              todayRows.map((ev, idx) => {
-                const d = parseYmd(ev.date);
-                const bg = rowBg(ev.kind, idx);
-                const sameDay = ymdFromISO(ev.startISO) === ymdFromISO(ev.endISO);
-                const scheduleLabel = sameDay
-                  ? formatThaiDate(d)
-                  : formatThaiRangeFromISO(ev.startISO, ev.endISO);
-                return (
-                  <div
-                    key={ev.id}
-                    className={`grid grid-cols-4 items-center rounded-md ${bg} hover:brightness-105 transition`}
-                  >
-                    <div className="p-3 text-center font-medium truncate">{ev.title}</div>
-                    <div className="p-3 text-center">
-                      <time>{scheduleLabel}</time>
-                    </div>
-                    <div className="p-3 text-center">
-                      <time>{ev.time}</time>
-                    </div>
-                    <div className="p-3">
-                      <DailyActionCell
-                        row={ev}
-                        source="mine"
-                        onDelete={(id) => handleDelete(id, ev.title, ev.kind)}
-                        enableDelete
-                        size="sm"
-                        align="center"
-                      />
-                    </div>
-                  </div>
-                );
-              })
+              todayRows.map((ev) => (
+                <RowCard
+                  key={ev.id}
+                  row={ev}
+                  onDelete={(id) => handleDelete(id, ev.title, ev.kind)}
+                  enableDelete
+                />
+              ))
             )}
           </div>
 
@@ -279,17 +215,21 @@ export default function DailyPage() {
             {loading ? (
               <p className="text-gray-500 text-center">กำลังโหลดข้อมูล…</p>
             ) : todayRows.length === 0 ? (
-              <p className="text-gray-500 text-center">ยังไม่มีรายการในวันนี้</p>
+              <p className="text-gray-500 text-center">
+                ยังไม่มีรายการในวันนี้
+              </p>
             ) : (
               <>
-                <h2 className="text-center text-bf-btn font-semibold mb-2">กิจกรรมของฉัน</h2>
+                <h2 className="text-center text-bf-btn font-semibold mb-2">
+                  กิจกรรมของฉัน
+                </h2>
                 <ul role="list" className="space-y-0">
-                  {todayRows.map((ev, idx) => (
+                  {todayRows.map((ev) => (
                     <li key={ev.id}>
                       <MobileRow
                         row={ev}
                         onDelete={(id) => handleDelete(id, ev.title, ev.kind)}
-                        bgColor={rowBg(ev.kind, idx)}
+                        bgColor={rowBg(ev.kind)}
                         enableDelete
                       />
                     </li>
@@ -317,31 +257,9 @@ export default function DailyPage() {
                   ยังไม่มีกิจกรรมหลังจากวันนี้
                 </div>
               ) : (
-                upcomingRows.map((ev, idx) => {
-                  const d = parseYmd(ev.date);
-                  const bg = rowBg("activity", idx);
-                  const sameDay = ymdFromISO(ev.startISO) === ymdFromISO(ev.endISO);
-                  const scheduleLabel = sameDay
-                    ? formatThaiDate(d)
-                    : formatThaiRangeFromISO(ev.startISO, ev.endISO);
-                  return (
-                    <div
-                      key={ev.id}
-                      className={`grid grid-cols-4 items-center rounded-md ${bg} hover:brightness-105 transition`}
-                    >
-                      <div className="p-3 text-center font-medium truncate">{ev.title}</div>
-                      <div className="p-3 text-center">
-                        <time>{scheduleLabel}</time>
-                      </div>
-                      <div className="p-3 text-center">
-                        <time>{ev.time}</time>
-                      </div>
-                      <div className="p-3">
-                        <DailyActionCell row={ev} enableDelete={false} size="sm" align="center" />
-                      </div>
-                    </div>
-                  );
-                })
+                upcomingRows.map((ev) => (
+                  <RowCard key={ev.id} row={ev} enableDelete={false} />
+                ))
               )}
             </div>
           </div>
@@ -352,19 +270,25 @@ export default function DailyPage() {
               <p className="text-center text-red-600">{thumbsError}</p>
             )}
             {thumbsLoading ? (
-              <p className="text-gray-500 text-center">กำลังโหลดกิจกรรมแนะนำ…</p>
+              <p className="text-gray-500 text-center">
+                กำลังโหลดกิจกรรมแนะนำ…
+              </p>
             ) : upcomingRows.length === 0 ? (
-              <p className="text-gray-500 text-center">ยังไม่มีกิจกรรมหลังจากวันนี้</p>
+              <p className="text-gray-500 text-center">
+                ยังไม่มีกิจกรรมหลังจากวันนี้
+              </p>
             ) : (
               <>
-                <h2 className="text-center text-bf-btn font-semibold mb-2">กิจกรรมแนะนำ</h2>
+                <h2 className="text-center text-bf-btn font-semibold mb-2">
+                  กิจกรรมแนะนำ
+                </h2>
                 <ul role="list" className="space-y-0">
-                  {upcomingRows.map((ev, idx) => (
+                  {upcomingRows.map((ev) => (
                     <li key={ev.id}>
                       <MobileRow
                         row={ev}
                         onDelete={(id) => handleDelete(id, ev.title, ev.kind)}
-                        bgColor={rowBg("activity", idx)}
+                        bgColor={rowBg("activity")}
                         enableDelete={false}
                       />
                     </li>
@@ -374,7 +298,7 @@ export default function DailyPage() {
             )}
           </div>
 
-          {/* ถังรีไซเคิล (RecycleBinWidget รองรับ uncontrolled อยู่แล้ว) */}
+          {/* Recycle Bin */}
           <div className="mt-6 w-full flex sm:justify-end">
             <RecycleBinWidget
               entries={removedEntries}

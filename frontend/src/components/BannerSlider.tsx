@@ -1,144 +1,205 @@
+// src/components/BannerSlider.tsx
 "use client";
 
-import Slider, { CustomArrowProps } from "react-slick";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Slider, { type Settings } from "react-slick";
 import Image from "next/image";
+import Link from "next/link";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import { FaArrowCircleLeft } from "react-icons/fa";
-import { FaArrowCircleRight } from "react-icons/fa";
-import Link from "next/link";
+import React from "react";
+import { apiRoutes } from "@/lib/apiRoutes";
+import type { ActivityThumbnailResponse } from "@/types/activities";
 
-function SampleNextArrow(props: CustomArrowProps) {
-  const { onClick } = props;
-  return (
-    <button
-      onClick={onClick}
-      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 
-                 text-white text-2xl sm:text-4xl lg:text-5xl 
-                 cursor-pointer z-20"
-    >
-      <FaArrowCircleRight />
-    </button>
-  );
+export type BannerSliderProps = {
+  source?: "mine" | "reco";
+};
+
+/* ========== Utils ========== */
+function resolveImageUrl(path?: string | null) {
+  if (!path) return "/fallback-activity.png";
+  if (/^https?:\/\//i.test(path)) return path;
+  const base = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/+$/, "") || "";
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+}
+function isThumb(x: unknown): x is ActivityThumbnailResponse {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  return typeof o.id === "string" && typeof o.title === "string";
 }
 
-function SamplePrevArrow(props: CustomArrowProps) {
-  const { onClick } = props;
-  return (
-    <button
-      onClick={onClick}
-      className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 
-                 text-white text-2xl sm:text-4xl lg:text-5xl 
-                 cursor-pointer z-20"
-    >
-      <FaArrowCircleLeft />
-    </button>
-  );
-}
-const banners = [
-    {
-    src: "/hero1.png",
-    title: "ยินดีต้อนรับนักศึกษาใหม่! " + (new Date().getFullYear() + 543),
-    desc: "ขอให้นักศึกษาทุกคนเริ่มต้นการเดินทางครั้งใหม่ที่เต็มไปด้วยพลังและแรงบันดาลใจ",
-    href: "#"
-  },
-  {
-    src: "/activityImages/1.png",
-    title: "วันไหว้ครู",
-    desc: "“ขอเชิญชวนเพื่อนๆ ทุกคน มาร่วมกิจกรรมวันไหว้ครู ร่วมแสดงความกตัญญูและส่งมอบรอยยิ้ม”",
-    href: "#"
-  },
-  {
-    src: "/activityImages/3.png",
-    title: "เส้นทางการทำงาน ของ “ผศ.ดร.ปิยะ เตชะธีราวัฒน์”",
-    desc: "เชิญนักศึกษาเข้าร่วมฟัง ผศ.ดร.ปิยะ เตชะธีราวัฒน์ แนะแนวเรียนและแนวทางอาชีพสายวิศวกรรมคอมพิวเตอร์",
-    href: "#"
-  },
-  {
-    src: "/activityImages/5.png",
-    title: "ปฐมนิเทศนักศึกษาใหม่ " + (new Date().getFullYear() + 543) +  " คณะวิศวกรรมศาสตร์ มหาวิทยาลัยธรรมศาสตร์",
-    desc: "ขอเชิญนักศึกษาใหม่คณะวิศวกรรมศาสตร์ มหาวิทยาลัยธรรมศาสตร์ เข้าร่วมงาน ปฐมนิเทศ 2568 เพื่อแนะนำแนวทางการเรียนและกิจกรรมต่าง ๆ ของคณะ ",
-    href: "#"
-  },
-  {
-    src: "/activityImages/7.png",
-    title: "TSE FIRST MEET FUNFAIR",
-    desc: "รอทุกคนมาสนุก มาพบเพื่อนใหม่และสร้างความทรงจำดี ๆ ด้วยกันในงานแฟร์ TSE ชวนคนดีมาพบกัน",
-    href: "#"
-  },
-  {
-    src: "/activityImages/9.png",
-    title: "รับช็อป มอบกาวน์!",
-    desc: "ถึงเวลาของเราแล้ว! มารับช็อปและกาวน์ ลงทะเบียนเลย เพื่อเตรียมตัวเป็น ”วิศวกรตัวจริง พร้อมถ่ายรูปกับเพื่อนแบบคนเท่ห์ ๆ คูล ๆ",
-    href: "#"
-  },
-  {
-    src: "/activityImages/11.png",
-    title: "การแข่งขันกีฬาภายในคณะวิศวกรรมศาสตร์",
-    desc: "ชาว TSE ทุกคน เตรียมพบกับการแข่งขันกีฬาภายในคณะวิศวกรรมศาสตร์ มหาวิทยาลัยธรรมศาสตร์มหาวิทยาลัยธรรมศาสตร์ ประจำปี 2025 นี้",
-    href: "#"
-  },
-  {
-    src: "/activityImages/13.png",
-    title: "เปิดโลกกิจกรรม!",
-    desc: "TSE AFTER CLASS FAIR EXPLORE THE WORLD OF CLUBS เลิกเรียนแล้ว...ไปเปิดโลกกิจกรรมกันเถอะ",
-    href: "#"
-  },
-];
+/* ========== Component ========== */
+export default function BannerSlider({ source = "reco" }: BannerSliderProps) {
+  const [activities, setActivities] = useState<ActivityThumbnailResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [current, setCurrent] = useState(0);
+  const sliderRef = useRef<Slider | null>(null);
 
+  const reduceMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-export default function BannerSlider() {
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 700,
+  useEffect(() => {
+    const ac = new AbortController();
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch(apiRoutes.getAllActivitiesThumbnails, {
+          credentials: "include",
+          signal: ac.signal,
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const list = Array.isArray(data) ? data.filter(isThumb) : [];
+        const withImg = list.filter((a) => !!a.image_path);
+        setActivities(withImg.slice(0, 7));
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          console.error("โหลดกิจกรรมไม่สำเร็จ:", err);
+          setError("โหลดรูปกิจกรรมไม่สำเร็จ กรุณาลองใหม่");
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => ac.abort();
+  }, []);
+
+  const slides = useMemo(() => activities, [activities]);
+
+  const settings: Settings = {
+    dots: false,
+    infinite: slides.length > 1,
+    speed: reduceMotion ? 0 : 600,
     slidesToShow: 1,
     slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 8000,
-    arrows: true,
-    nextArrow: <SampleNextArrow />,
-    prevArrow: <SamplePrevArrow />,
+    autoplay: false,
+    arrows: false,
+    pauseOnHover: true,
+    accessibility: true,
+    beforeChange: (_old, next) => setCurrent(next),
   };
 
-  // Use the detailed banners array defined above
-  return (
-    <section className="w-full relative overflow-hidden">
-      <Slider {...settings}>
-        {banners.map((banner, idx) => (
-          <div
-            key={idx}
-            className="relative 
-                       h-[200px] sm:h-[350px] md:h-[500px] lg:h-[650px] xl:h-[750px]"
-          >
-            <Link href={banner.href || "#"} className="block relative h-full w-full">
-  <Image
-    src={banner.src}
-    alt={`Banner ${idx + 1}`}
-    fill
-    priority={idx === 0}
-    sizes="(max-width: 640px) 100vw, 
-           (max-width: 1024px) 90vw, 
-           80vw"
-    className="object-cover cursor-pointer"
-  />
-
-  <div
-    className="absolute inset-x-0 bottom-0 
-               bg-[#A92535]/60 text-white w-full 
-               flex flex-col justify-center 
-               space-y-1 sm:space-y-2 
-               px-3 sm:px-6 md:px-10 lg:px-16 
-               h-16 sm:h-20 md:h-24 lg:h-28 
-               text-xs sm:text-sm md:text-base lg:text-xl"
-  >
-    <div className="font-extrabold text-2xl">{banner.title}</div>
-    <div>{banner.desc}</div>
-  </div>
-</Link>
+  if (loading) {
+    return (
+      <section
+        className="w-full max-w-6xl mx-auto px-3 sm:px-4 pt-6"
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <div className="relative rounded-xl shadow-xl overflow-hidden">
+          <div className="aspect-[16/9] bg-gray-100">
+            <div className="h-full w-full animate-pulse bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100" />
           </div>
-        ))}
-      </Slider>
+        </div>
+        <p className="mt-3 text-center text-gray-600">กำลังโหลดกิจกรรม…</p>
+      </section>
+    );
+  }
+
+  if (error || slides.length === 0) {
+    return (
+      <section className="w-full max-w-6xl mx-auto px-3 sm:px-4 pt-6">
+        <div
+          className="rounded-xl border bg-red-50 text-red-700 p-4"
+          role="alert"
+        >
+          {error ?? "ยังไม่มีกิจกรรมสำหรับแสดง"}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="w-full max-w-6xl mx-auto px-3 sm:px-4 pt-6">
+      <div className="relative rounded-xl shadow-xl">
+        <div className="relative overflow-hidden rounded-xl h-[190px] sm:h-[260px] md:h-auto md:aspect-[16/9]">
+          <Slider
+            ref={sliderRef}
+            {...settings}
+            className="h-full [&_.slick-list]:h-full [&_.slick-track]:h-full [&_.slick-slide]:h-full [&_.slick-slide>div]:h-full"
+          >
+            {slides.map((a, idx) => {
+              const imgUrl = resolveImageUrl(a.image_path);
+              const q = source === "mine" ? "?src=mine" : "";
+              return (
+                <div key={a.id} className="relative h-full w-full">
+                  <Link
+                    href={`/activity/${encodeURIComponent(a.id)}${q}`}
+                    aria-label={a.title}
+                    className="block relative h-full w-full"
+                    prefetch={false}
+                  >
+                    <Image
+                      src={imgUrl}
+                      alt={a.title}
+                      fill
+                      priority={idx === 0}
+                      sizes="100vw"
+                      className="object-cover md:object-contain"
+                    />
+                  </Link>
+                </div>
+              );
+            })}
+          </Slider>
+
+          {/* ปุ่มซ้าย/ขวา (เดิม) */}
+          {slides.length > 1 && (
+            <>
+              <button
+                onClick={() => sliderRef.current?.slickPrev()}
+                aria-label="ก่อนหน้า"
+                className="absolute inset-y-0 left-0 w-[20%] sm:w-[16%] lg:w-[12%] flex items-center justify-start pl-3 sm:pl-4 bg-gradient-to-r bg-black/20 to-transparent hover:bg-black/30 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/60 z-30"
+              >
+                <IoIosArrowBack className="text-white drop-shadow text-4xl sm:text-5xl" />
+              </button>
+              <button
+                onClick={() => sliderRef.current?.slickNext()}
+                aria-label="ถัดไป"
+                className="absolute inset-y-0 right-0 w-[20%] sm:w-[16%] lg:w-[12%] flex items-center justify-end pr-3 sm:pr-4 bg-gradient-to-l bg-black/20 to-transparent hover:bg-black/30 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/60 z-30"
+              >
+                <IoIosArrowForward className="text-white drop-shadow text-4xl sm:text-5xl" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {slides.length > 1 && (
+        <nav
+          className="mt-4 flex items-center justify-center gap-3"
+          aria-label="ตัวเลือกสไลด์"
+        >
+          {slides.map((_s, idx) => {
+            const active = idx === current;
+            return (
+              <button
+                key={idx}
+                type="button"
+                aria-label={`ไปยังสไลด์ที่ ${idx + 1}`}
+                aria-current={active ? "true" : undefined}
+                onClick={() => sliderRef.current?.slickGoTo(idx)}
+                className="group p-2 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/60 rounded-full"
+              >
+                <span
+                  className={[
+                    "block rounded-full transition-transform duration-200",
+                    "h-2.5 w-2.5 md:h-3 md:w-3",
+                    active
+                      ? "bg-[#E6B800] scale-110 shadow"
+                      : "bg-black/70 group-hover:bg-black",
+                  ].join(" ")}
+                />
+              </button>
+            );
+          })}
+        </nav>
+      )}
     </section>
   );
 }

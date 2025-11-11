@@ -9,4 +9,5 @@ export type DailyRow = {
   endISO: string;
   slug?: string;
   status?: "upcoming" | "running" | "finished" | "cancelled";
+  dateLabel?: string;
 };

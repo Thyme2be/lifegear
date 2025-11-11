@@ -6,7 +6,7 @@ export const THAI_MONTHS = [
 ] as const;
 
 export const THAI_DAYS = [
-  "อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์",
+  "วันอาทิตย์","วันจันทร์","วันอังคาร","วันพุธ","วันพฤหัสบดี","วันศุกร์","วันเสาร์",
 ] as const;
 
 export const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -271,12 +271,91 @@ export function formatThaiRangeFromISO(startISO: string, endISO: string) {
   if (Number.isNaN(s.valueOf()) || Number.isNaN(e.valueOf())) return "—";
 
   const sd = s.getDate();
-  const sm = THAI_MONTHS[s.getMonth()];
-  const sy = s.getFullYear() + 543;
   const ed = e.getDate();
+  const sm = THAI_MONTHS[s.getMonth()];
   const em = THAI_MONTHS[e.getMonth()];
+  const sy = s.getFullYear() + 543;
   const ey = e.getFullYear() + 543;
 
-  const sameMonth = s.getFullYear() === e.getFullYear() && s.getMonth() === e.getMonth();
-  return sameMonth ? `${sd}–${ed} ${sm} ${sy}` : `${sd} ${sm} ${sy} – ${ed} ${em} ${ey}`;
+  const sameDay =
+    s.getFullYear() === e.getFullYear() &&
+    s.getMonth() === e.getMonth() &&
+    s.getDate() === e.getDate();
+
+  if (sameDay) {
+    // ✅ วันเดียวกัน => "11 พฤศจิกายน 2568"
+    return `${sd} ${sm} ${sy}`;
+  }
+
+  const sameMonth =
+    s.getFullYear() === e.getFullYear() && s.getMonth() === e.getMonth();
+
+  // ต่างวันแต่เดือนเดียวกัน => "11–13 พฤศจิกายน 2568"
+  if (sameMonth) return `${sd}–${ed} ${sm} ${sy}`;
+
+  // คนละเดือน/คนละปี => "30 พฤศจิกายน 2568 – 2 ธันวาคม 2568"
+  return `${sd} ${sm} ${sy} – ${ed} ${em} ${ey}`;
 }
+
+/** คืนค่าเช่น "10 พฤศจิกายน 2568" (ไม่มีชื่อวัน) */
+export function formatThaiNoWeekday(d: Date): string {
+  return d.toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+export function isSameYmd(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+/** ช่วงวันที่แบบไม่มีชื่อวัน */
+export function formatThaiRangeNoWeekday(startISO: string, endISO: string): string {
+  const s = new Date(startISO);
+  const e = new Date(endISO);
+  if (isNaN(s.valueOf()) || isNaN(e.valueOf())) return "—";
+  return isSameYmd(s, e)
+    ? formatThaiNoWeekday(s)
+    : `${formatThaiNoWeekday(s)} - ${formatThaiNoWeekday(e)}`;
+}
+
+/* ===== เพิ่มส่วน "มีชื่อวัน" ===== */
+
+const TH_WEEKDAYS_LONG = ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"] as const;
+const TH_WEEKDAYS_SHORT = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."] as const;
+
+type WeekdayStyle = "long" | "short";
+
+/** คืนค่า "วันจันทร์" หรือ "จ." ตาม style */
+function thaiWeekdayLabel(d: Date, style: WeekdayStyle = "long"): string {
+  const i = d.getDay();
+  return style === "long" ? `วัน${TH_WEEKDAYS_LONG[i]}` : TH_WEEKDAYS_SHORT[i];
+}
+
+/** เช่น "วันพุธ 10 พฤศจิกายน 2568" หรือ "พ." 10 พ.ย. 2568 (ถ้าไปปรับเดือนให้ย่อเอง) */
+export function formatThaiWithWeekday(d: Date, style: WeekdayStyle = "long"): string {
+  return `${thaiWeekdayLabel(d, style)} ${formatThaiNoWeekday(d)}`;
+}
+
+/** ช่วงวันที่แบบมีชื่อวัน
+ *  - วันเดียว: "วันศุกร์ 15 พฤศจิกายน 2568"
+ *  - ต่างวัน:  "วันศุกร์ 15 พฤศจิกายน 2568 - วันอาทิตย์ 17 พฤศจิกายน 2568"
+ */
+export function formatThaiRangeWithWeekday(
+  startISO: string,
+  endISO: string,
+  style: WeekdayStyle = "long"
+): string {
+  const s = new Date(startISO);
+  const e = new Date(endISO);
+  if (isNaN(s.valueOf()) || isNaN(e.valueOf())) return "—";
+  return isSameYmd(s, e)
+    ? formatThaiWithWeekday(s, style)
+    : `${formatThaiWithWeekday(s, style)} - ${formatThaiWithWeekday(e, style)}`;
+}
+

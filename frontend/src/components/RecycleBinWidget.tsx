@@ -50,7 +50,7 @@ const EntryRow = React.memo(function EntryRow({
       </div>
       <button
         type="button"
-        className="text-sm px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="text-sm px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
         onClick={() => onRestoreOne(e.id)}
         aria-label={`กู้คืน ${e.title ?? e.id}`}
       >
@@ -95,7 +95,7 @@ export default function RecycleBinWidget({
         <button
           id={btnId}
           type="button"
-          className="w-full flex items-center justify-between px-4 py-2 rounded-t-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+          className="w-full flex items-center justify-between px-4 py-2 rounded-t-xl cursor-pointer"
           onClick={handleToggle}
           aria-expanded={expanded}
           aria-controls={panelId}
@@ -121,7 +121,7 @@ export default function RecycleBinWidget({
                 </ul>
                 <button
                   type="button"
-                  className="mt-3 w-full text-sm px-3 py-2 rounded-md bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  className="mt-3 w-full text-sm px-3 py-2 rounded-md bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 cursor-pointer"
                   onClick={onRestoreAll}
                 >
                   กู้คืนทั้งหมด

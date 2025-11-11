@@ -1,10 +1,14 @@
 "use client";
 
-import React from "react";
-import { IoChevronBack, IoChevronForward, IoToday } from "react-icons/io5";
+import React, { useId } from "react";
+import {
+  IoChevronBack,
+  IoChevronForward,
+  IoToday,
+  IoCalendarOutline,
+} from "react-icons/io5";
 
 function toDateInputValue(d: Date) {
-  // YYYY-MM-DD (ตามสเปก input[type=date])
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
@@ -12,12 +16,11 @@ function toDateInputValue(d: Date) {
 }
 
 function parseYmdSafe(ymd: string) {
-  // คาดหวังรูปแบบ YYYY-MM-DD
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
   const [y, m, d] = ymd.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
-  // กัน invalid เช่น 2025-02-31
-  if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+  if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d)
+    return null;
   return dt;
 }
 
@@ -32,20 +35,27 @@ export default function DateNav({
   value,
   onChange,
   className,
+  placeholder = "เลือกวันที่สนใจ",
 }: {
-  value: string;                // "YYYY-MM-DD"
+  value: string; // "YYYY-MM-DD"
   onChange: (nextYmd: string) => void;
   className?: string;
+  placeholder?: string;
 }) {
   const todayYmd = toDateInputValue(new Date());
+  const inputId = useId(); // กันชนกันหลายอินสแตนซ์
 
   return (
-    <div className={`flex flex-col sm:flex-row gap-2 sm:items-center ${className ?? ""}`}>
+    <div
+      className={`flex flex-col sm:flex-row gap-2 sm:items-center justify-center ${
+        className ?? ""
+      }`}
+    >
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => onChange(addDays(value, -1))}
-          className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 hover:bg-gray-50"
+          className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 hover:bg-gray-50 bg-white cursor-pointer"
           aria-label="วันก่อนหน้า"
           title="วันก่อนหน้า"
         >
@@ -53,29 +63,46 @@ export default function DateNav({
           <span className="hidden sm:inline">ก่อนหน้า</span>
         </button>
 
-        <input
-          type="date"
-          className="rounded-lg border px-3 py-2"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          aria-label="เลือกวัน"
-        />
+        {/* ปุ่ม UI ที่แสดงข้อความตลอด + อินพุตจริงโปร่งใสซ้อนทับ */}
+        <div className="relative inline-block">
+          <label
+            htmlFor={inputId}
+            className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 bg-white cursor-pointer hover:bg-gray-50 select-none cursor-pointer"
+          >
+            <span>{placeholder}</span>
+            <IoCalendarOutline aria-hidden="true"/>
+          </label>
+
+          <input
+            id={inputId}
+            type="date"
+            className="absolute inset-0 w-full h-full opacity-0"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            aria-label="เลือกวันจากปฏิทิน"
+          />
+
+          {/* แจ้งสถานะให้ screen reader (ไม่แสดงบนจอ) */}
+          <span className="sr-only" aria-live="polite">
+            {value ? `เลือกแล้ว ${value}` : "ยังไม่ได้เลือกวันที่"}
+          </span>
+        </div>
 
         <button
           type="button"
           onClick={() => onChange(todayYmd)}
-          className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 hover:bg-gray-50"
+          className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 hover:bg-gray-50 bg-white cursor-pointer"
           aria-label="ไปวันนี้"
           title="ไปวันนี้"
         >
-          <IoToday />
           <span className="hidden sm:inline">วันนี้</span>
+          <IoToday />
         </button>
 
         <button
           type="button"
           onClick={() => onChange(addDays(value, 1))}
-          className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 hover:bg-gray-50"
+          className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 hover:bg-gray-50 bg-white cursor-pointer"
           aria-label="วันถัดไป"
           title="วันถัดไป"
         >

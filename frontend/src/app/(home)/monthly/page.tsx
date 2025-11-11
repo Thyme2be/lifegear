@@ -19,7 +19,7 @@ import {
 
 import IconButton from "@/components/IconButton";
 import CalendarCard from "@/components/CalendarCard";
-import MonthEventList from "@/components/MonthEventList";
+import MonthEventList from "@/components/CalendarEventList";
 import { apiRoutes } from "@/lib/apiRoutes";
 import { useMonthlyEvents } from "@/hooks/useMonthlyEvents";
 import type { CalendarEvent } from "@/types/calendar";

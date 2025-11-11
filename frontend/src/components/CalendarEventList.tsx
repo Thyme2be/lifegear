@@ -1,9 +1,11 @@
+// src/components/MonthEventList.tsx
 "use client";
 
 import Link from "next/link";
 import React from "react";
 import type { CalendarEvent } from "@/types/calendar";
 import { ymdInBangkok } from "@/lib/datetime";
+import { rowBg } from "@/components/daily/rowBg"; // ✅ ใช้สีพื้นจากที่เดียวกับตาราง
 
 type Props = {
   eventsByDay: Record<number, CalendarEvent[]>;
@@ -45,15 +47,14 @@ export default function MonthEventList({
           <div className="flex-1" />
         </div>
 
-        {/* ลิสต์รายการ: ขึ้นบรรทัดใหม่เสมอ + สีตามประเภท + ลิงก์ไปหน้า Daily */}
+        {/* ลิสต์รายการ: สีพื้นตาม rowBg + สีตัวอักษรอ่านง่าย */}
         <ul className="ml-4 mt-1 space-y-1">
           {list.map((x) => {
-            // แยกสีตามประเภท
-            const isClass = x.kind === "class";
-            const bg = isClass ? "bg-[#A3BBEE]" : "bg-[#FFCA64]";
-            const fg = "text-black";
+            const bg = rowBg(x.kind); // ✅ ใช้สีเดียวกับแถวในตาราง
+            const fg =
+              x.kind === "activity" ? "text-[#5A2E00]" : "text-[#002B7A]"; // อ่านชัดบนสีพื้น
 
-            // สร้างลิงก์ไปหน้า daily ด้วยวันที่จาก start_at (โซนเวลา BKK)
+            // ลิงก์ไปหน้า daily ด้วยวันที่จาก start_at (Asia/Bangkok)
             let dailyHref = "/daily";
             if (x.start_at) {
               const ymd = ymdInBangkok(x.start_at);
@@ -69,7 +70,12 @@ export default function MonthEventList({
                 <Link
                   prefetch={false}
                   href={dailyHref}
-                  className={`block w-full ${bg} ${fg} text-sm sm:text-lg px-2 py-1 rounded-md hover:underline focus:outline-none focus:ring-2 focus:ring-main/40`}
+                  className={[
+                    "block w-full text-sm sm:text-lg px-2 py-1 rounded-md",
+                    "hover:underline focus:outline-none focus:ring-2 focus:ring-main/40",
+                    bg,
+                    fg,
+                  ].join(" ")}
                   title={x.title}
                 >
                   • {x.title}
