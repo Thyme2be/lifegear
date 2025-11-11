@@ -32,10 +32,10 @@ export default function Home() {
       <HelpBannerSlider />
       
       {/* FAQ Section */}
-      <section className="p-6 sm:p-10 max-w-4xl mx-auto mt-10">
+      <section className="px-10 sm:px-20 py-10 w-full mt-10">
       {/* หัวข้อ */}
       <div className="flex items-center gap-3 mb-8">
-        <FaQuestionCircle className="text-[#730217] text-3xl" />
+        <FaQuestionCircle className="text-[#730217] text-4xl sm:text-5xl" />
         <h1 className="heading text-[#730217]">
           คำถามที่พบบ่อย (FAQ) – LifeGear
         </h1>
@@ -45,10 +45,10 @@ export default function Home() {
       <div className="space-y-6">
         {faqs.map((item, idx) => (
           <div key={idx}>
-            <p className="font-bold text-[#2E2E2E] text-sm sm:text-base lg:text-lg">
+            <p className="font-bold text-[#2E2E2E] text-lg sm:text-xl lg:text-2xl">
               คำถาม: {item.q}
             </p>
-            <p className="text-[#2E2E2E] mt-1 text-sm sm:text-base leading-relaxed">
+            <p className="text-[#2E2E2E] mt-2 text-base sm:text-lg lg:text-xl leading-relaxed">
               <span className="font-bold">ตอบ:</span> {item.a}
             </p>
             {idx < faqs.length - 1 && <hr className="my-4 border-gray-300" />}
