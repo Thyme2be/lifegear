@@ -57,11 +57,15 @@ export default function BannerSlider({ source = "reco" }: BannerSliderProps) {
         const list = Array.isArray(data) ? data.filter(isThumb) : [];
         const withImg = list.filter((a) => !!a.image_path);
         setActivities(withImg.slice(0, 7));
-      } catch (err: any) {
-        if (err?.name !== "AbortError") {
-          console.error("โหลดกิจกรรมไม่สำเร็จ:", err);
-          setError("โหลดรูปกิจกรรมไม่สำเร็จ กรุณาลองใหม่");
-        }
+      } catch (err: unknown) {
+        // ⬅️ แทน any ด้วย unknown แล้วค่อยเช็กประเภท
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("โหลดกิจกรรมไม่สำเร็จ:", err);
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "โหลดรูปกิจกรรมไม่สำเร็จ กรุณาลองใหม่";
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -72,16 +76,19 @@ export default function BannerSlider({ source = "reco" }: BannerSliderProps) {
   const slides = useMemo(() => activities, [activities]);
 
   const settings: Settings = {
-    dots: false,
-    infinite: slides.length > 1,
-    speed: reduceMotion ? 0 : 600,
+    dots: true,
+    infinite: true,
+    speed: reduceMotion ? 0 : 500,
     slidesToShow: 1,
     slidesToScroll: 1,
-    autoplay: false,
-    arrows: false,
-    pauseOnHover: true,
-    accessibility: true,
-    beforeChange: (_old, next) => setCurrent(next),
+    arrows: true,
+    beforeChange: () => {
+    },
+    afterChange: (index: number) => {
+      setCurrent(index); // ⬅️ sync ปุ่ม dot
+    },
+    autoplay: !reduceMotion,
+    autoplaySpeed: 5000,
   };
 
   if (loading) {
@@ -148,20 +155,19 @@ export default function BannerSlider({ source = "reco" }: BannerSliderProps) {
             })}
           </Slider>
 
-          {/* ปุ่มซ้าย/ขวา (เดิม) */}
           {slides.length > 1 && (
             <>
               <button
                 onClick={() => sliderRef.current?.slickPrev()}
                 aria-label="ก่อนหน้า"
-                className="absolute inset-y-0 left-0 w-[20%] sm:w-[16%] lg:w-[12%] flex items-center justify-start pl-3 sm:pl-4 bg-gradient-to-r bg-black/20 to-transparent hover:bg-black/30 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/60 z-30"
+                className="absolute inset-y-0 left-0 w-[20%] sm:w-[16%] lg:w-[12%] flex items-center justify-start pl-3 sm:pl-4 from-black/20 to-transparent bg-gradient-to-r hover:from-black/30 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/60 z-30"
               >
                 <IoIosArrowBack className="text-white drop-shadow text-4xl sm:text-5xl" />
               </button>
               <button
                 onClick={() => sliderRef.current?.slickNext()}
                 aria-label="ถัดไป"
-                className="absolute inset-y-0 right-0 w-[20%] sm:w-[16%] lg:w-[12%] flex items-center justify-end pr-3 sm:pr-4 bg-gradient-to-l bg-black/20 to-transparent hover:bg-black/30 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/60 z-30"
+                className="absolute inset-y-0 right-0 w-[20%] sm:w-[16%] lg:w-[12%] flex items-center justify-end pr-3 sm:pr-4 from-black/20 to-transparent bg-gradient-to-l hover:from-black/30 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/60 z-30"
               >
                 <IoIosArrowForward className="text-white drop-shadow text-4xl sm:text-5xl" />
               </button>

@@ -6,17 +6,34 @@ import Image from "next/image";
 import Link from "next/link";
 import { apiRoutes } from "@/lib/apiRoutes";
 import type { ActivityThumbnailResponse } from "@/types/activities";
+// ⬇️ ลบ axios ที่ไม่ได้ใช้ (กัน ESLint อื่น ๆ โผล่)
+// import axios, { AxiosError } from "axios";
+
+type ServerError = { message?: string; detail?: string; error?: string };
 
 type Props = {
   limit?: number;          // จำกัดจำนวนรูป (เช่น 6 หรือ 9)
   className?: string;      // ใส่คลาสของกริดจากภายนอกได้
 };
 
+function getServerMessage(data: unknown): string | undefined {
+  if (data && typeof data === "object") {
+    const d = data as ServerError;
+    return d.message || d.detail || d.error;
+  }
+  return undefined;
+}
+
+// ⬇️ type guard: ข้อมูล 1 ชิ้นต้องมี id/title เป็น string
+function isThumb(x: unknown): x is ActivityThumbnailResponse {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  return typeof o.id === "string" && typeof o.title === "string";
+}
+
 function resolveImageUrl(path?: string | null) {
-  if (!path) return "/fallback-activity.png"; // ← ใส่รูป fallback ใน public
-  // ถ้า backend ส่งมาเป็น absolute แล้ว ก็ใช้เลย
+  if (!path) return "/fallback-activity.png";
   if (/^https?:\/\//i.test(path)) return path;
-  // กรณีส่งเป็น relative เช่น "/media/xxx.jpg"
   const base = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/+$/, "") || "";
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
@@ -33,12 +50,22 @@ export default function HomeActivityThumbs({ limit = 9, className = "" }: Props)
         setLoading(true);
         const res = await fetch(apiRoutes.getAllActivitiesThumbnails, {
           credentials: "include",
+          headers: { Accept: "application/json" },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: ActivityThumbnailResponse[] = await res.json();
-        if (alive) setItems(Array.isArray(data) ? data : []);
-      } catch (e: any) {
-        if (alive) setError(e?.message ?? "โหลดข้อมูลไม่สำเร็จ");
+        const raw: unknown = await res.json();
+        // ⬇️ validate ให้เป็น array ของ ActivityThumbnailResponse
+        const data: ActivityThumbnailResponse[] = Array.isArray(raw)
+          ? raw.filter(isThumb)
+          : [];
+        if (alive) setItems(data);
+      } catch (e: unknown) { // ⬅️ แทน any ด้วย unknown
+        if (!alive) return;
+        const msg =
+          (e instanceof Error && e.message) ||
+          getServerMessage(e) ||
+          "โหลดข้อมูลไม่สำเร็จ";
+        setError(msg);
       } finally {
         if (alive) setLoading(false);
       }
@@ -51,15 +78,19 @@ export default function HomeActivityThumbs({ limit = 9, className = "" }: Props)
     [items, limit]
   );
 
+  // ⬇️ ทำ index สำหรับ skeleton ให้เป็น number[] (เลี่ยง any จาก Array.from แบบเปล่า)
+  const skeletonIndices = useMemo(
+    () => Array.from({ length: Math.min(limit, 9) }, (_, i) => i),
+    [limit]
+  );
+
   return (
     <section aria-label="กิจกรรมทั้งหมด (รูปตัวอย่าง)" className="max-w-6xl mx-auto px-4">
-      {/* หัวข้อส่วนนี้ (ถ้าอยากซ่อน ให้ลบ 2 บรรทัดนี้ได้) */}
       <h2 className="heading2 text-main text-center mb-4">กิจกรรมทั้งหมด</h2>
 
-      {/* สถานะโหลด/ผิดพลาด */}
       {loading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {Array.from({ length: Math.min(limit, 9) }).map((_, i) => (
+          {skeletonIndices.map((i) => (
             <div
               key={i}
               className="relative aspect-[4/3] rounded-2xl bg-gray-200 animate-pulse"

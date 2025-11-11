@@ -7,14 +7,16 @@ import type { ActivityThumbnailResponse } from "@/types/activities";
 import { ActivityCategory } from "@/lib/enums/activity";
 import { apiRoutes } from "@/lib/apiRoutes";
 import { normalizeCategory } from "@/utils/activityUtils";
-/* ✅ นำเข้า TimeFilter จาก SearchBox */
 import { TimeFilter } from "@/components/SearchBox";
-/* ✅ ใช้ตัวช่วยเวลา (Bangkok) ที่โปรเจกต์มีอยู่ */
 import { ymdInBangkok } from "@/lib/datetime";
 
 type MaybeCategory = { category?: unknown; category_code?: unknown };
 type ServerError = { message?: string; detail?: string; error?: string };
-
+type StartLike = {
+  startISO?: string | null;
+  startAt?: string | null;
+  date?: string | null; // อาจเป็น "YYYY-MM-DD"
+};
 const FILTER_OPTIONS = Object.values(ActivityCategory) as ActivityCategory[];
 
 function getServerMessage(data: unknown): string | undefined {
@@ -27,14 +29,8 @@ function getServerMessage(data: unknown): string | undefined {
 
 /* ✅ ดึง startISO จากหลายฟิลด์ที่เป็นไปได้ */
 function getStartISO(a: ActivityThumbnailResponse): string | null {
-  const anyA = a as any;
-  return (
-    a?.start_at ??
-    anyA?.startISO ??
-    anyA?.startAt ??
-    anyA?.date ?? // กรณี thumbnail ส่งเป็น "YYYY-MM-DD"
-    null
-  );
+  const alt = a as unknown as StartLike;
+  return a?.start_at ?? alt.startISO ?? alt.startAt ?? alt.date ?? null;
 }
 
 export function useActivity() {

@@ -46,7 +46,6 @@ function CalendarCellBase({
   highlight,
   selected = false,
   onSelectDay,
-  onShowMore,
 }: Props) {
   const { visibleEvents, moreCount, hasMore } = React.useMemo(() => {
     const visible = events.slice(0, MAX_EVENTS);

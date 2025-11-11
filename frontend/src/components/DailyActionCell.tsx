@@ -21,7 +21,7 @@ function cx(...parts: Array<string | undefined | false>) {
   return parts.filter(Boolean).join(" ");
 }
 
-function _DailyActionCell({
+function DailyActionCell({
   row,
   onDelete,
   enableDelete = true,
@@ -82,4 +82,4 @@ function _DailyActionCell({
   );
 }
 
-export default React.memo(_DailyActionCell);
+export default React.memo(DailyActionCell);
