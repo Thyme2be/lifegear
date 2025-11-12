@@ -1,9 +1,8 @@
-// src/components/BannerSlider.tsx
+// src/components/banner/HomeBannerSlider.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Slider, { type Settings } from "react-slick";
-import Image from "next/image";
 import Link from "next/link";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import "slick-carousel/slick/slick.css";
@@ -11,12 +10,15 @@ import "slick-carousel/slick/slick-theme.css";
 import React from "react";
 import { apiRoutes } from "@/lib/apiRoutes";
 import type { ActivityThumbnailResponse } from "@/types/activities";
+import HomeBannerEmpty from "@/components/banner/HomeBannerEmpty";
+import BannerShell from "@/components/banner/BannerShell";
+import HomeBannerLoading from "@/components/banner/HomeBannerLoading";
+import HomeBannerError from "@/components/banner/HomeBannerError";
+import ImageWithFallback from "../ui/FallbackImage";
 
-export type BannerSliderProps = {
-  source?: "mine" | "reco";
-};
+export type BannerSliderProps = { source?: "mine" | "reco" };
 
-/* ========== Utils ========== */
+/* Utils */
 function resolveImageUrl(path?: string | null) {
   if (!path) return "/fallback-activity.png";
   if (/^https?:\/\//i.test(path)) return path;
@@ -29,11 +31,26 @@ function isThumb(x: unknown): x is ActivityThumbnailResponse {
   return typeof o.id === "string" && typeof o.title === "string";
 }
 
-/* ========== Component ========== */
-export default function BannerSlider({ source = "reco" }: BannerSliderProps) {
+/* รูปแบบ fade-in */
+function FadeImage(props: React.ComponentProps<typeof ImageWithFallback>) {
+  const [ready, setReady] = useState(false);
+  return (
+    <ImageWithFallback
+      {...props}
+      className={`object-cover md:object-contain transition-opacity duration-300 ${ready ? "opacity-100" : "opacity-0"}`}
+      // next/image มี onLoadingComplete ส่งมา — forward ให้ฟังก์ชันเรา
+      onLoadingComplete={() => setReady(true)}
+    />
+  );
+}
+
+export default function HomeBannerSlider({ source = "reco" }: BannerSliderProps) {
   const [activities, setActivities] = useState<ActivityThumbnailResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [firstLoad, setFirstLoad] = useState(true);       // ⬅️ ครั้งแรกจริงๆ
+  const [isRefetching, setIsRefetching] = useState(false); // ⬅️ โหลดรอบหลัง ๆ
+  const [showEmpty, setShowEmpty] = useState(false);       // ⬅️ หน่วง empty
   const [current, setCurrent] = useState(0);
   const sliderRef = useRef<Slider | null>(null);
 
@@ -41,86 +58,76 @@ export default function BannerSlider({ source = "reco" }: BannerSliderProps) {
     typeof window !== "undefined" &&
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
+  const fetchSlides = useCallback(async (signal?: AbortSignal) => {
+    if (firstLoad) setLoading(true);
+    else setIsRefetching(true);
+
+    setError(null);
+    try {
+      const res = await fetch(apiRoutes.getAllActivitiesThumbnails, {
+        credentials: "include",
+        signal,
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const list = Array.isArray(data) ? data.filter(isThumb) : [];
+      const withImg = list.filter((a) => !!a.image_path);
+      setActivities(withImg.slice(0, 7));
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      const msg = err instanceof Error ? err.message : "โหลดรูปกิจกรรมไม่สำเร็จ กรุณาลองใหม่";
+      setError(msg);
+    } finally {
+      setLoading(false);
+      setIsRefetching(false);
+      setFirstLoad(false);
+    }
+  }, [firstLoad]);
+
+  const handleRetry = useCallback(() => {
+    const ac = new AbortController();
+    fetchSlides(ac.signal);
+    return () => ac.abort();
+  }, [fetchSlides]);
+
   useEffect(() => {
     const ac = new AbortController();
-    (async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await fetch(apiRoutes.getAllActivitiesThumbnails, {
-          credentials: "include",
-          signal: ac.signal,
-          headers: { Accept: "application/json" },
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const list = Array.isArray(data) ? data.filter(isThumb) : [];
-        const withImg = list.filter((a) => !!a.image_path);
-        setActivities(withImg.slice(0, 7));
-      } catch (err: unknown) {
-        // ⬅️ แทน any ด้วย unknown แล้วค่อยเช็กประเภท
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        console.error("โหลดกิจกรรมไม่สำเร็จ:", err);
-        const msg =
-          err instanceof Error
-            ? err.message
-            : "โหลดรูปกิจกรรมไม่สำเร็จ กรุณาลองใหม่";
-        setError(msg);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    fetchSlides(ac.signal);
     return () => ac.abort();
-  }, []);
+  }, [fetchSlides]);
+
+  // หน่วง empty 250ms เพื่อกันแฟลชถ้าข้อมูลกำลังมา
+  useEffect(() => {
+    if (!firstLoad && !loading && activities.length === 0) {
+      const t = setTimeout(() => setShowEmpty(true), 250);
+      return () => clearTimeout(t);
+    }
+    setShowEmpty(false);
+  }, [firstLoad, loading, activities.length]);
 
   const slides = useMemo(() => activities, [activities]);
 
   const settings: Settings = {
-    dots: true,
+    dots: false,
     infinite: true,
     speed: reduceMotion ? 0 : 500,
     slidesToShow: 1,
     slidesToScroll: 1,
     arrows: true,
-    beforeChange: () => {
-    },
-    afterChange: (index: number) => {
-      setCurrent(index); // ⬅️ sync ปุ่ม dot
-    },
+    beforeChange: () => {},
+    afterChange: (index: number) => setCurrent(index),
     autoplay: !reduceMotion,
     autoplaySpeed: 5000,
   };
 
-  if (loading) {
-    return (
-      <section
-        className="w-full max-w-6xl mx-auto px-3 sm:px-4 pt-6"
-        aria-busy="true"
-        aria-live="polite"
-      >
-        <div className="relative rounded-xl shadow-xl overflow-hidden">
-          <div className="aspect-[16/9] bg-gray-100">
-            <div className="h-full w-full animate-pulse bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100" />
-          </div>
-        </div>
-        <p className="mt-3 text-center text-gray-600">กำลังโหลดกิจกรรม…</p>
-      </section>
-    );
-  }
+  /* States */
+if (firstLoad && loading) return <HomeBannerLoading />;
+if (error && slides.length === 0) return <HomeBannerError message={error} onRetry={handleRetry} />;
+if (showEmpty) return <HomeBannerEmpty />;
 
-  if (error || slides.length === 0) {
-    return (
-      <section className="w-full max-w-6xl mx-auto px-3 sm:px-4 pt-6">
-        <div
-          className="rounded-xl border bg-red-50 text-red-700 p-4"
-          role="alert"
-        >
-          {error ?? "ยังไม่มีกิจกรรมสำหรับแสดง"}
-        </div>
-      </section>
-    );
-  }
 
+  /* Normal */
   return (
     <section className="w-full max-w-6xl mx-auto px-3 sm:px-4 pt-6">
       <div className="relative rounded-xl shadow-xl">
@@ -141,19 +148,24 @@ export default function BannerSlider({ source = "reco" }: BannerSliderProps) {
                     className="block relative h-full w-full"
                     prefetch={false}
                   >
-                    <Image
+                    <FadeImage
                       src={imgUrl}
+                      fallback="/fallback-activity.png"
                       alt={a.title}
                       fill
                       priority={idx === 0}
                       sizes="100vw"
-                      className="object-cover md:object-contain"
                     />
                   </Link>
                 </div>
               );
             })}
           </Slider>
+
+          {/* ระหว่าง refetch แสดง overlay เบา ๆ แต่คงสไลด์เดิมไว้ */}
+          {isRefetching && (
+            <div className="pointer-events-none absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
+          )}
 
           {slides.length > 1 && (
             <>
@@ -177,10 +189,7 @@ export default function BannerSlider({ source = "reco" }: BannerSliderProps) {
       </div>
 
       {slides.length > 1 && (
-        <nav
-          className="mt-4 flex items-center justify-center gap-3"
-          aria-label="ตัวเลือกสไลด์"
-        >
+        <nav className="mt-4 flex items-center justify-center gap-3" aria-label="ตัวเลือกสไลด์">
           {slides.map((_s, idx) => {
             const active = idx === current;
             return (
@@ -196,9 +205,7 @@ export default function BannerSlider({ source = "reco" }: BannerSliderProps) {
                   className={[
                     "block rounded-full transition-transform duration-200",
                     "h-2.5 w-2.5 md:h-3 md:w-3",
-                    active
-                      ? "bg-[#E6B800] scale-110 shadow"
-                      : "bg-black/70 group-hover:bg-black",
+                    active ? "bg-[#E6B800] scale-110 shadow" : "bg-black/70 group-hover:bg-black",
                   ].join(" ")}
                 />
               </button>

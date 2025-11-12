@@ -1,13 +1,24 @@
-export default function ErrorBox({
-  message,
-  onRetry,
-}: {
-  message: string;
+"use client";
+
+type ErrorBoxProps = {
+  message?: string;
   onRetry?: () => void;
-}) {
+  className?: string;
+};
+
+export default function ErrorBox({ message, onRetry, className }: ErrorBoxProps) {
   return (
-    <div className="mb-8 p-4 rounded-xl bg-red-50 text-red-700 shadow-sm border border-red-200 animate-fadeIn">
-      <p className="mb-3 font-medium">เกิดข้อผิดพลาด: {message}</p>
+    <div
+      role="alert"
+      aria-live="assertive"
+      className={[
+        "p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 shadow-sm animate-fadeIn",
+        className,
+      ].filter(Boolean).join(" ")}
+    >
+      <p className="mb-3 font-medium">
+        เกิดข้อผิดพลาด: {message ?? "ไม่สามารถโหลดข้อมูลได้"}
+      </p>
       {onRetry && (
         <button
           type="button"

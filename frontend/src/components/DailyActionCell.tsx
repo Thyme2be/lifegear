@@ -2,8 +2,8 @@
 "use client";
 
 import React from "react";
-import MoreInfoButton from "@/components/MoreInfoButton";
-import DeleteButton from "@/components/DeleteButton";
+import MoreInfoButton from "@/components/ui/MoreInfoButton";
+import DeleteButton from "@/components/ui/DeleteButton";
 import type { DailyRow as Row } from "@/types/viewmodels";
 
 type Props = {

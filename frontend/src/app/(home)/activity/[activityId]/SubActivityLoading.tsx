@@ -1,5 +1,3 @@
-// src/app/(home)/a
-
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";

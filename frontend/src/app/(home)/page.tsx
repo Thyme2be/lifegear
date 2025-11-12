@@ -1,6 +1,5 @@
-// src/app/(home)/page/page.tsx
 import type { Metadata } from "next";
-import BannerSliderWrapper from "@/components/BannerSliderWrapper";
+import BannerSliderWrapper from "@/components/banner/BannerSliderWrapper";
 import FeatureCard from "@/components/FeatureCard";
 
 export const metadata: Metadata = {
@@ -11,6 +10,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main className="bg-primary">
+      {/* ไม่ต้อง Suspense แล้ว */}
       <BannerSliderWrapper />
 
       <article className="p-6 my-10 max-w-5xl mx-auto text-center ">
@@ -26,28 +26,10 @@ export default function Home() {
         </p>
       </article>
 
-      {/* เดิม: การ์ด 3 ใบ (ยังคงไว้ได้ตามดีไซน์) */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
-        <FeatureCard
-          title="กิจกรรมทั้งหมด"
-          link="/activity"
-          imgSrc="/activity.png"
-          alt="Activity card"
-        />
-        <FeatureCard
-          title="ตารางชีวิต"
-          subTitle="รายเดือน"
-          link="/monthly"
-          imgSrc="/mothly.png"   // <- ถ้าไฟล์จริงชื่อ monthly.png แนะนำแก้นะ
-          alt="Monthly card"
-        />
-        <FeatureCard
-          title="ตารางชีวิต"
-          subTitle="รายวัน"
-          link="/daily"
-          imgSrc="/daily.png"
-          alt="Daily card"
-        />
+        <FeatureCard title="กิจกรรมทั้งหมด" link="/activity" imgSrc="/activity.png" alt="Activity card" />
+        <FeatureCard title="ตารางชีวิต" subTitle="รายเดือน" link="/monthly" imgSrc="/mothly.png" alt="Monthly card" />
+        <FeatureCard title="ตารางชีวิต" subTitle="รายวัน" link="/daily" imgSrc="/daily.png" alt="Daily card" />
       </section>
     </main>
   );

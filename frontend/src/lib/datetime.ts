@@ -1,12 +1,28 @@
 // src/lib/datetime.ts
 
 export const THAI_MONTHS = [
-  "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
-  "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
+  "มกราคม",
+  "กุมภาพันธ์",
+  "มีนาคม",
+  "เมษายน",
+  "พฤษภาคม",
+  "มิถุนายน",
+  "กรกฎาคม",
+  "สิงหาคม",
+  "กันยายน",
+  "ตุลาคม",
+  "พฤศจิกายน",
+  "ธันวาคม",
 ] as const;
 
 export const THAI_DAYS = [
-  "วันอาทิตย์","วันจันทร์","วันอังคาร","วันพุธ","วันพฤหัสบดี","วันศุกร์","วันเสาร์",
+  "วันอาทิตย์",
+  "วันจันทร์",
+  "วันอังคาร",
+  "วันพุธ",
+  "วันพฤหัสบดี",
+  "วันศุกร์",
+  "วันเสาร์",
 ] as const;
 
 export const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -257,7 +273,8 @@ export function safeRangeHm(startISO: string, endISO?: string | null): string {
   const start = new Date(normalizeIsoToBangkok(startISO));
   const end = endISO ? new Date(normalizeIsoToBangkok(endISO)) : null;
   if (Number.isNaN(start.valueOf())) return "—";
-  if (end && !Number.isNaN(end.valueOf())) return `${toHm(startISO)}-${toHm(endISO!)}`;
+  if (end && !Number.isNaN(end.valueOf()))
+    return `${toHm(startISO)}-${toHm(endISO!)}`;
   return `${toHm(startISO)}-—`;
 }
 
@@ -282,18 +299,15 @@ export function formatThaiRangeFromISO(startISO: string, endISO: string) {
     s.getMonth() === e.getMonth() &&
     s.getDate() === e.getDate();
 
-  if (sameDay) {
-    // ✅ วันเดียวกัน => "11 พฤศจิกายน 2568"
-    return `${sd} ${sm} ${sy}`;
-  }
+  if (sameDay) return `${sd} ${sm} ${sy}`;
 
   const sameMonth =
     s.getFullYear() === e.getFullYear() && s.getMonth() === e.getMonth();
-
-  // ต่างวันแต่เดือนเดียวกัน => "11–13 พฤศจิกายน 2568"
   if (sameMonth) return `${sd}–${ed} ${sm} ${sy}`;
 
-  // คนละเดือน/คนละปี => "30 พฤศจิกายน 2568 – 2 ธันวาคม 2568"
+  const sameYear = s.getFullYear() === e.getFullYear();
+  if (sameYear) return `${sd} ${sm} – ${ed} ${em} ${sy}`;
+
   return `${sd} ${sm} ${sy} – ${ed} ${em} ${ey}`;
 }
 
@@ -315,7 +329,10 @@ export function isSameYmd(a: Date, b: Date): boolean {
 }
 
 /** ช่วงวันที่แบบไม่มีชื่อวัน */
-export function formatThaiRangeNoWeekday(startISO: string, endISO: string): string {
+export function formatThaiRangeNoWeekday(
+  startISO: string,
+  endISO: string
+): string {
   const s = new Date(startISO);
   const e = new Date(endISO);
   if (isNaN(s.valueOf()) || isNaN(e.valueOf())) return "—";
@@ -326,8 +343,16 @@ export function formatThaiRangeNoWeekday(startISO: string, endISO: string): stri
 
 /* ===== เพิ่มส่วน "มีชื่อวัน" ===== */
 
-const TH_WEEKDAYS_LONG = ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"] as const;
-const TH_WEEKDAYS_SHORT = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."] as const;
+const TH_WEEKDAYS_LONG = [
+  "อาทิตย์",
+  "จันทร์",
+  "อังคาร",
+  "พุธ",
+  "พฤหัสบดี",
+  "ศุกร์",
+  "เสาร์",
+] as const;
+const TH_WEEKDAYS_SHORT = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."] as const;
 
 type WeekdayStyle = "long" | "short";
 
@@ -338,7 +363,10 @@ function thaiWeekdayLabel(d: Date, style: WeekdayStyle = "long"): string {
 }
 
 /** เช่น "วันพุธ 10 พฤศจิกายน 2568" หรือ "พ." 10 พ.ย. 2568 (ถ้าไปปรับเดือนให้ย่อเอง) */
-export function formatThaiWithWeekday(d: Date, style: WeekdayStyle = "long"): string {
+export function formatThaiWithWeekday(
+  d: Date,
+  style: WeekdayStyle = "long"
+): string {
   return `${thaiWeekdayLabel(d, style)} ${formatThaiNoWeekday(d)}`;
 }
 
@@ -358,4 +386,3 @@ export function formatThaiRangeWithWeekday(
     ? formatThaiWithWeekday(s, style)
     : `${formatThaiWithWeekday(s, style)} - ${formatThaiWithWeekday(e, style)}`;
 }
-

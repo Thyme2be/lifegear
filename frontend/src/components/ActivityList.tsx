@@ -7,7 +7,7 @@ import Link from "next/link";
 import type { ActivityThumbnailResponse } from "@/types/activities";
 import { toastSuccess, toastError } from "@/lib/toast";
 import AddToLifeButton from "@/components/AddToLifeButton";
-import MoreInfoButton from "@/components/MoreInfoButton";
+import MoreInfoButton from "@/components/ui/MoreInfoButton";
 
 interface ActivityListProps {
   activity: ActivityThumbnailResponse & { slug?: string };

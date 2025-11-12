@@ -173,7 +173,7 @@ export default function AddToLifeModal({
           </p>
 
           {dateBlock && (
-            <div className="mt-4 text-sm text-neutral-700 bg-neutral-50 border rounded-xl px-4 py-3 text-left">
+            <div className="mt-4 text-xs text-neutral-700 bg-neutral-50 border rounded-xl px-4 py-3 text-left">
               <div className="font-semibold mb-1">ตารางเวลา</div>
               <div>{dateBlock}</div>
             </div>

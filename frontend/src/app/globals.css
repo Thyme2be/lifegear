@@ -40,9 +40,10 @@ body {
   height: 100%;
 }
 
-.font-serif-thai {
+html, body { 
   font-family: "Noto Serif Thai", serif;
 }
+
 
 @layer utilities {
   /* For Chrome, Safari, Edge, Opera */

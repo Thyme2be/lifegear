@@ -1,4 +1,11 @@
 import { Metadata } from "next";
+import {Noto_Serif_Thai } from "next/font/google";
+
+const notoSerifThai = Noto_Serif_Thai({
+  variable: "--font-noto-serif-thai",
+  subsets: ["thai"],
+  weight: ["100","200","300","400","500","600","700","800","900"],
+});
 
 export const metadata: Metadata = {
     title: "LifeGear | Daily",
@@ -11,7 +18,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <section
+        <section className={`${notoSerifThai.className} antialiased`}
         >
             {children}
         </section>

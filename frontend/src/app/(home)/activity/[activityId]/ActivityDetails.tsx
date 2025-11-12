@@ -3,12 +3,16 @@
 import { toastSuccess, toastError } from "@/lib/toast";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import ImageWithFallback from "@/components/ui/FallbackImage";
 import ContactInfoView from "@/components/contactInfo";
-import { formatDateThaiFromIso, formatTimeThaiFromIso } from "@/lib/datetime";
+import {
+  formatDateThaiFromIso,
+  formatTimeThaiFromIso,
+  formatThaiRangeFromISO,
+} from "@/lib/datetime";
 import { apiRoutes } from "@/lib/apiRoutes";
 import AddToLifeButton from "@/components/AddToLifeButton";
 import SubActivityNotFoundPage from "@/components/ui/NotFoundPage";
-import ImageWithFallback from "@/components/ui/FallbackImage";
 import SubActivityLoading from "./SubActivityLoading";
 import ErrorFetchDisplay from "./errorFetchDisplay";
 import type { ActivityDetailResponse } from "@/types/activities";
@@ -38,11 +42,13 @@ export default function ActivityDetails({
   const searchParams = useSearchParams();
   const fromMine = (searchParams.get("src") ?? "") === "mine";
 
-  // ✅ กัน double-encoding เช่น .../%2520... ด้วยการ decode ก่อน
-  const normalizedId = useMemo(
-    () => decodeURIComponent(activityId),
-    [activityId]
-  );
+  const normalizedId = useMemo(() => {
+    try {
+      return decodeURIComponent(activityId);
+    } catch {
+      return activityId; // ถ้า decode ไม่ได้ก็ใช้ค่าดิบ
+    }
+  }, [activityId]);
 
   const [data, setData] = useState<ActivityDetailResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,13 +103,19 @@ export default function ActivityDetails({
 
   const { title, imgSrc, dateText, timeText } = useMemo(() => {
     const title = data?.title || "ไม่มีชื่อกิจกรรม";
-    const imgSrc = data?.image_path || FALLBACK_IMG;
+    const imgSrc = data?.image_path ?? FALLBACK_IMG;
 
-    const dateText = data?.start_at
-      ? formatDateThaiFromIso(data.start_at)
-      : "ไม่ระบุวันที่จัดกิจกรรม";
+    // วันที่: ใช้ช่วงแบบเดียวกับ Daily
+    let dateText = "ไม่ระบุวันที่จัดกิจกรรม";
+    if (data?.start_at && data?.end_at) {
+      dateText = formatThaiRangeFromISO(data.start_at, data.end_at);
+    } else if (data?.start_at) {
+      const d = formatDateThaiFromIso(data.start_at);
+      if (d) dateText = d;
+    }
 
-    let timeText = "ไม่ระบุเวลา";
+    // เวลา: กรณีข้ามวันให้บอกวัน+เวลา ทั้งสองฝั่ง
+     let timeText = "ไม่ระบุเวลา";
     if (data?.start_at && data?.end_at) {
       timeText = `${formatTimeThaiFromIso(
         data.start_at
@@ -136,7 +148,7 @@ export default function ActivityDetails({
 
   // ===== Render =====
   return (
-    <section className="max-w-3xl mx-auto bg-white rounded-[28px] shadow-2xl p-6 sm:p-10 ">
+    <section className="max-w-3xl mx-auto bg-white rounded-[28px] shadow-2xl p-6 sm:p-10">
       <h1 className="text-2xl sm:text-3xl font-extrabold text-main tracking-tight mb-6">
         กิจกรรม “{title}”
       </h1>
@@ -166,7 +178,6 @@ export default function ActivityDetails({
         <InfoRow label="สถานที่จัดกิจกรรม">
           {data.location_text || "ไม่ระบุสถานที่"}
         </InfoRow>
-
         {data.contact_info && (
           <div>
             <b className="font-bold">รายละเอียดวิธีการสมัคร</b>
@@ -183,7 +194,7 @@ export default function ActivityDetails({
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-end gap-4">
+      <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-4">
         <AddToLifeButton
           activityId={normalizedId}
           startAt={data.start_at ?? undefined}
