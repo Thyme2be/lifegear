@@ -1,7 +1,7 @@
 // src/components/HelpBannerSlider.tsx
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import Slider, { type Settings } from "react-slick";
 import Image from "next/image";
 import Link from "next/link";
@@ -39,7 +39,10 @@ export default function HelpBannerSlider() {
   if (banners.length === 0) {
     return (
       <section className="w-full max-w-7xl mx-auto px-2 sm:px-4 pt-6">
-        <div className="rounded-xl border bg-gray-50 text-gray-700 p-4" role="alert">
+        <div
+          className="rounded-xl border bg-gray-50 text-gray-700 p-4"
+          role="alert"
+        >
           ยังไม่มีแบนเนอร์สำหรับแสดง
         </div>
       </section>
@@ -59,7 +62,11 @@ export default function HelpBannerSlider() {
             {banners.map((src, idx) => (
               <div key={src} className="relative h-full w-full">
                 {/* ถ้าอยากคลิกแล้วไปหน้า help detail ก็หุ้มด้วย <Link> ได้ */}
-                <Link href="#" aria-label={`HowToUse ${idx + 1}`} className="block relative h-full w-full">
+                <Link
+                  href="#"
+                  aria-label={`HowToUse ${idx + 1}`}
+                  className="block relative h-full w-full"
+                >
                   <Image
                     src={src}
                     alt={`HowToUse ${idx + 1}`}
@@ -97,7 +104,10 @@ export default function HelpBannerSlider() {
 
       {/* Dots แยกอยู่นอกสไลด์ (สไตล์ Home) */}
       {banners.length > 1 && (
-        <nav className="mt-4 flex items-center justify-center gap-3" aria-label="ตัวเลือกสไลด์">
+        <nav
+          className="mt-4 flex items-center justify-center gap-3"
+          aria-label="ตัวเลือกสไลด์"
+        >
           {banners.map((_s, idx) => {
             const active = idx === current;
             return (
@@ -113,7 +123,9 @@ export default function HelpBannerSlider() {
                   className={[
                     "block rounded-full transition-transform duration-200",
                     "h-2.5 w-2.5 md:h-3 md:w-3",
-                    active ? "bg-[#E6B800] scale-110 shadow" : "bg-black/70 group-hover:bg-black",
+                    active
+                      ? "bg-[#E6B800] scale-110 shadow"
+                      : "bg-black/70 group-hover:bg-black",
                   ].join(" ")}
                 />
               </button>

@@ -11,7 +11,6 @@ import React from "react";
 import { apiRoutes } from "@/lib/apiRoutes";
 import type { ActivityThumbnailResponse } from "@/types/activities";
 import HomeBannerEmpty from "@/components/banner/HomeBannerEmpty";
-import BannerShell from "@/components/banner/BannerShell";
 import HomeBannerLoading from "@/components/banner/HomeBannerLoading";
 import HomeBannerError from "@/components/banner/HomeBannerError";
 import ImageWithFallback from "../ui/FallbackImage";

@@ -12,14 +12,12 @@ import {
   THAI_MONTHS,
   ymdInBangkok,
 } from "@/lib/datetime";
-import {
-  readRemovedIds,
-  REMOVED_IDS_KEY,
-} from "@/lib/removed-ids";
+import { readRemovedIds, REMOVED_IDS_KEY } from "@/lib/removed-ids";
 
 import IconButton from "@/components/IconButton";
 import CalendarCard from "@/components/CalendarCard";
 import MonthEventList from "@/components/CalendarEventList";
+import CalendarCardSkeleton from "@/components/skeletons/CalendarCardSkeleton";
 import { apiRoutes } from "@/lib/apiRoutes";
 import { useMonthlyEvents } from "@/hooks/useMonthlyEvents";
 import type { CalendarEvent } from "@/types/calendar";
@@ -212,14 +210,10 @@ export default function MonthlyPage() {
 
       {/* Layout */}
       <div className="w-full mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
-        {/* Calendar */}
+        {/* Calendar (ซ้าย) */}
         <section className="lg:col-span-3">
           {loading ? (
-            <div
-              className="bg-white rounded-4xl p-6 shadow animate-pulse h-[520px]"
-              aria-busy="true"
-              aria-label="กำลังโหลดปฏิทิน"
-            />
+            <CalendarCardSkeleton />
           ) : error ? (
             <div
               className="bg-white rounded-4xl p-6 shadow text-red-700 text-sm sm:text-base"
@@ -248,19 +242,13 @@ export default function MonthlyPage() {
         </section>
 
         {/* Sidebar */}
-        <aside
-          className="bg-white rounded-4xl shadow-[0_4px_12px_rgba(0,0,0,0.08)]
-                     p-4 sm:p-6 flex flex-col min-h-full"
-        >
+        <aside className="bg-white rounded-4xl shadow p-4 sm:p-6 flex flex-col min-h-full">
           <h2 className="text-2xl sm:text-3xl font-bold text-main text-center mb-3">
             กิจกรรมของฉัน
           </h2>
-
           <div className="flex-1 flex min-h-0">
             {loading ? (
-              <div className="w-full space-y-2 self-start">
-                <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 rounded animate-pulse" />
+             <div className="bg-white rounded-4xl shadow p-4 sm:p-6 flex flex-col min-h-full">
                 <div className="h-4 bg-gray-200 rounded animate-pulse" />
               </div>
             ) : error ? (
@@ -275,8 +263,6 @@ export default function MonthlyPage() {
               />
             )}
           </div>
-
-          {/* ปุ่มล่างสุด */}
           <div className="mt-auto" />
           <Link
             href="/activity"

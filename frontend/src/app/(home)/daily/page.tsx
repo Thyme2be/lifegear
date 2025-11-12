@@ -179,22 +179,22 @@ export default function DailyPage() {
         </header>
 
         <section className="bg-white rounded-xl p-6">
-          {/* Loading / Error */}
-          {loading && (
-            <div className="text-center py-8 text-gray-500">
-              กำลังโหลดข้อมูล…
-            </div>
-          )}
-          {!loading && error && (
-            <div className="text-center py-8 text-red-600">
-              โหลดข้อมูลไม่สำเร็จ: {error}
-            </div>
-          )}
-
           {/* Desktop: ตารางบน */}
           <HeaderGrid title="กิจกรรมของฉัน" />
           <div className="hidden sm:grid gap-2">
-            {!loading && todayRows.length === 0 ? (
+            {/* เออเรอร์ของตารางบน */}
+            {!loading && error && (
+              <div className="text-center text-red-600 p-4 bg-red-50 rounded-lg">
+                โหลดข้อมูลไม่สำเร็จ: {error}
+              </div>
+            )}
+
+            {/* โหลดเหมือนตารางล่าง */}
+            {loading ? (
+              <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
+                กำลังโหลดรายการวันนี้…
+              </div>
+            ) : todayRows.length === 0 ? (
               <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
                 ยังไม่มีรายการในวันนี้
               </div>
@@ -212,8 +212,16 @@ export default function DailyPage() {
 
           {/* Mobile: ตารางบน */}
           <div className="sm:hidden mt-4">
+            {!loading && error && (
+              <p className="text-center text-red-600">
+                โหลดข้อมูลไม่สำเร็จ: {error}
+              </p>
+            )}
+
             {loading ? (
-              <p className="text-gray-500 text-center">กำลังโหลดข้อมูล…</p>
+              <p className="text-gray-500 text-center">
+                กำลังโหลดรายการวันนี้…
+              </p>
             ) : todayRows.length === 0 ? (
               <p className="text-gray-500 text-center">
                 ยังไม่มีรายการในวันนี้
