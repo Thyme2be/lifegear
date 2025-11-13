@@ -12,7 +12,7 @@ function cx(...xs: Array<string | false | null | undefined>) {
 }
 
 const base =
-  "inline-flex items-center justify-center select-none font-semibold rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#B30000] disabled:opacity-60 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center select-none font-semibold rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-bf-btn disabled:opacity-60 disabled:cursor-not-allowed";
 
 const sizeMap: Record<BtnSize, string> = {
   sm: "h-9 px-3 text-sm gap-2",
@@ -27,14 +27,14 @@ const iconOnlyMap: Record<BtnSize, string> = {
 };
 
 const variantMap: Record<BtnVariant, string> = {
-  primary: "bg-[#B30000] text-white shadow-md hover:bg-[#880000]",
+  primary: "bg-bf-btn text-white shadow-md hover:bg-btn-hover",
   secondary: "bg-black text-white shadow-md hover:bg-zinc-800",
   outline:
-    "border border-current text-[#B30000] bg-white hover:bg-[#B30000]/5",
+    "border border-current text-bf-btn bg-white hover:bg-bf-btn/5",
   ghost: "bg-transparent hover:bg-black/5",
-  danger: "bg-[#B30000] text-white shadow-md hover:bg-[#880000]",
+  danger: "bg-bf-btn text-white shadow-md hover:bg-btn-hover",
   "danger-outline":
-    "text-[#B30000] border border-[#B30000] bg-transparent hover:bg-[#B30000]/10",
+    "text-bf-btn border border-bf-btn bg-transparent hover:bg-bf-btn/10",
 };
 
 export function buttonClasses(

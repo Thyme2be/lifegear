@@ -1,5 +1,5 @@
 import {Noto_Serif_Thai } from "next/font/google";
-import TopBar from "@/components/TopBar";
+import TopBar from "@/components/TopBar/TopBar";
 import Footer from "@/components/Footer";
 
 const notoSerifThai = Noto_Serif_Thai({

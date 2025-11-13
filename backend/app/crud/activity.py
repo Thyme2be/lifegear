@@ -74,7 +74,7 @@ def get_activity_by_id(activity_id: str) -> ActivityResponse:
 def get_all_thumbnail_activities() -> ActivityThumbnailResponse:
     response = (
         supabase.table("activities")
-        .select("id, title, image_path, start_at, status, category")
+        .select("id, title, image_path, start_at, end_at, status, category")
         .order("start_at", desc=True)
         .execute()
     )
