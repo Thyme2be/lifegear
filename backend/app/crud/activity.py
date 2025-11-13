@@ -34,7 +34,7 @@ async def create_activity(
 
     data = {
         "id": new_id,
-        "created_by": created_by,
+        "created_by": str(created_by),
         "title": activity.title,
         "description": activity.description,
         "start_at": activity.start_at.isoformat(),
@@ -47,7 +47,7 @@ async def create_activity(
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
-
+    
     response = supabase.table("activities").insert(data).execute()
     if not response.data:
         raise Exception(f"Insert failed: {response}")
