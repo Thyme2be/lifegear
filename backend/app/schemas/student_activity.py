@@ -8,6 +8,7 @@ class StudentActivityCreate(BaseModel):
 
 
 class StudentActivityResponse(BaseModel):
+    id: str
     title: str
     start_at: datetime
     end_at: datetime

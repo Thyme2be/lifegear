@@ -17,7 +17,7 @@ def get_daily_activity(
 
     response = (
         supabase.table("student_activities")
-        .select("activities(title, start_at, end_at)")
+        .select("activities(id, title, start_at, end_at)")
         .eq("student_id", str(user_id))
         .lt("activities.start_at", next_day_start.isoformat())
         .gt("activities.end_at", day_start.isoformat())
@@ -57,7 +57,7 @@ def get_monthly_activities_crud(
 
     response = (
         supabase.table("student_activities")
-        .select("activities(title, start_at, end_at)")
+        .select("activities(id, title, start_at, end_at)")
         .eq("student_id", str(user_id))
         .lt("activities.start_at", next_month_start.isoformat())
         .gt("activities.end_at", month_start.isoformat())

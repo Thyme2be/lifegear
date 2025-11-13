@@ -1,5 +1,5 @@
 import {Noto_Serif_Thai } from "next/font/google";
-import TopBar from "@/components/TopBar";
+import TopBar from "@/components/TopBar/TopBar";
 import Footer from "@/components/Footer";
 
 const notoSerifThai = Noto_Serif_Thai({
@@ -17,7 +17,10 @@ export default function RootLayout({
     <section lang="th">
       <div className={`${notoSerifThai.className} antialiased`}>
         <TopBar />
-        {children}
+        {/* เพิ่ม padding-top เผื่อพื้นที่ nav bar */}
+        <div className="pt-20">
+          {children}
+        </div>
         <Footer />
       </div>
     </section>

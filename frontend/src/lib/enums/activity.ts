@@ -1,3 +1,4 @@
+// src/lib/enums/activity.ts
 export enum ActivityStatus {
   Upcoming = "upcoming",
   Running = "running",
@@ -20,8 +21,8 @@ export const CategoryLabels: Record<ActivityCategory, string> = {
 };
 
 export const StatusLabels: Record<ActivityStatus, string> = {
-  [ActivityStatus.Upcoming]: "กำลังจะจัดขึ้น",   
-  [ActivityStatus.Running]: "กำลังดำเนินการ",     
-  [ActivityStatus.Finished]: "สิ้นสุดแล้ว",          
+  [ActivityStatus.Upcoming]: "กำลังจะจัดขึ้น",
+  [ActivityStatus.Running]: "กำลังดำเนินการ",
+  [ActivityStatus.Finished]: "สิ้นสุดแล้ว",
   [ActivityStatus.Cancelled]: "ยกเลิกการจัดกิจกรรม",
 };

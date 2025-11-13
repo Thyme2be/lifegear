@@ -55,6 +55,7 @@ class ActivityThumbnailResponse(BaseModel):
     title: str
     image_path: Optional[str] = None
     start_at: datetime
+    end_at: datetime
     status: ActivityStatus
     category: ActivityCategory
 

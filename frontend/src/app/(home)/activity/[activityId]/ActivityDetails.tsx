@@ -1,32 +1,24 @@
+// app/(home)/activity/[activityId]/ActivityDetails.tsx
 "use client";
-
+import { toastSuccess, toastError } from "@/lib/toast";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import ImageWithFallback from "@/components/ui/FallbackImage";
 import ContactInfoView from "@/components/contactInfo";
-import { formatDateThaiFromIso, formatTimeThaiFromIso } from "@/lib/datetime";
+import {
+  formatDateThaiFromIso,
+  formatTimeThaiFromIso,
+  formatThaiRangeFromISO,
+} from "@/lib/datetime";
 import { apiRoutes } from "@/lib/apiRoutes";
 import AddToLifeButton from "@/components/AddToLifeButton";
-import ErrorBox from "@/components/ui/ErrorBox";
-import NotFoundPage from "@/components/ui/NotFoundPage";
-import ImageWithFallback from "@/components/ui/FallbackImage";
+import SubActivityNotFoundPage from "@/components/ui/NotFoundPage";
 import SubActivityLoading from "./SubActivityLoading";
-import { ContactInfo } from "@/lib/contact";
+import ErrorFetchDisplay from "./errorFetchDisplay";
+import type { ActivityDetailResponse } from "@/types/activities";
 
 const FALLBACK_IMG = "/fallback_activity.png";
 
-/* ===================== Types ===================== */
-type Activity = {
-  id: string;
-  title?: string;
-  description?: string;
-  image_url?: string | null;
-  image_path?: string | null;
-  start_at?: string | null; // ISO
-  end_at?: string | null; // ISO
-  location_text?: string | null;
-  contact_info?: ContactInfo | null; // ให้ ContactInfoView จัดการภายใน
-};
-
-/* label/value บรรทัดข้อมูล */
 function InfoRow({
   label,
   children,
@@ -42,54 +34,63 @@ function InfoRow({
   );
 }
 
-/* ===================== Main Component ===================== */
 export default function ActivityDetails({
   activityId,
 }: {
   activityId: string;
 }) {
-  const [data, setData] = useState<Activity | null>(null);
+  const searchParams = useSearchParams();
+  const fromMine = (searchParams.get("src") ?? "") === "mine";
+
+  const normalizedId = useMemo(() => {
+    try {
+      return decodeURIComponent(activityId);
+    } catch {
+      return activityId; // ถ้า decode ไม่ได้ก็ใช้ค่าดิบ
+    }
+  }, [activityId]);
+
+  const [data, setData] = useState<ActivityDetailResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [reloadKey, setReloadKey] = useState(5); // ใช้สำหรับกด "ลองใหม่"
+  const [reloadKey, setReloadKey] = useState(0);
 
   const fetchActivity = useCallback(
     async (signal: AbortSignal) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(apiRoutes.getActivityById(activityId), {
+        const res = await fetch(apiRoutes.getActivityById(normalizedId), {
           credentials: "include",
           cache: "no-store",
           signal,
-          headers: {
-            Accept: "application/json",
-          },
+          headers: { Accept: "application/json" },
         });
 
         if (!res.ok) {
+          // แยก 404 เป็น not-found ให้ UI แสดงเพจไม่พบ
+          if (res.status === 404) {
+            if (!signal.aborted) {
+              setData(null);
+              setError(null);
+            }
+            return;
+          }
           throw new Error(`HTTP ${res.status} ${res.statusText}`);
         }
 
-        // ป้องกันกรณี body ใช้ซ้ำหรือ JSON พัง
-        const text = await res.text();
-        const json = text ? (JSON.parse(text) as Activity) : null;
-
-        if (!signal.aborted) {
-          setData(json);
-        }
-      } catch (err: unknown) {
+        const json = (await res.json()) as ActivityDetailResponse;
+        if (!signal.aborted) setData(json ?? null);
+      } catch (err) {
         if (signal.aborted) return;
         console.error("Error fetching activity data:", err);
         setError("ไม่สามารถโหลดข้อมูลกิจกรรมได้");
         setData(null);
       } finally {
-        if (!signal.aborted) {
-          setLoading(false);
-        }
+        if (!signal.aborted) setLoading(false);
       }
     },
-    [activityId]
+    [normalizedId]
   );
 
   useEffect(() => {
@@ -98,73 +99,70 @@ export default function ActivityDetails({
     return () => controller.abort();
   }, [fetchActivity, reloadKey]);
 
-  const handleRetry = useCallback(() => {
-    // กดลองใหม่ → เปลี่ยน key เพื่อ trigger useEffect
-    setReloadKey((k) => k + 1);
-  }, []);
+  const handleRetry = useCallback(() => setReloadKey((k) => k + 1), []);
 
-  /* ===================== Derived values ===================== */
   const { title, imgSrc, dateText, timeText } = useMemo(() => {
     const title = data?.title || "ไม่มีชื่อกิจกรรม";
-    const imgSrc = data?.image_url || data?.image_path || FALLBACK_IMG;
+    const imgSrc = data?.image_path ?? FALLBACK_IMG;
 
-    const dateText = data?.start_at
-      ? formatDateThaiFromIso(data.start_at)
-      : "ไม่ระบุวันที่จัดกิจกรรม";
+    // วันที่: ใช้ช่วงแบบเดียวกับ Daily
+    let dateText = "ไม่ระบุวันที่จัดกิจกรรม";
+    if (data?.start_at && data?.end_at) {
+      dateText = formatThaiRangeFromISO(data.start_at, data.end_at);
+    } else if (data?.start_at) {
+      const d = formatDateThaiFromIso(data.start_at);
+      if (d) dateText = d;
+    }
 
-    const timeText =
-      data?.start_at && data?.end_at
-        ? `${formatTimeThaiFromIso(data.start_at)} - ${formatTimeThaiFromIso(
-            data.end_at
-          )}`
-        : "ไม่ระบุเวลา";
+    // เวลา: กรณีข้ามวันให้บอกวัน+เวลา ทั้งสองฝั่ง
+     let timeText = "ไม่ระบุเวลา";
+    if (data?.start_at && data?.end_at) {
+      timeText = `${formatTimeThaiFromIso(
+        data.start_at
+      )} - ${formatTimeThaiFromIso(data.end_at)}`;
+    } else if (data?.start_at) {
+      timeText = formatTimeThaiFromIso(data.start_at) ?? "ไม่ระบุเวลา";
+    }
 
     return { title, imgSrc, dateText, timeText };
   }, [data]);
 
-  /* ===================== Render states ===================== */
+  // ===== Render states =====
+  if (loading && !data) return <SubActivityLoading />;
 
-  // ระหว่างโหลด
-
-  // มี error
   if (error) {
     return (
       <div className="py-12">
-        <ErrorBox message={error} onRetry={handleRetry} />
+        <ErrorFetchDisplay error={new Error(error)} reset={handleRetry} />
       </div>
     );
   }
 
-  if (loading && !data) {
-    return <SubActivityLoading />;
-  }
-
-  // โหลดเสร็จแต่ไม่มีข้อมูล
   if (!data) {
     return (
       <div className="py-12">
-        <NotFoundPage />
+        <SubActivityNotFoundPage />
       </div>
     );
   }
 
-  // มีข้อมูลแล้ว
+  // ===== Render =====
   return (
-    <section className="max-w-3xl mx-auto bg-white rounded-[28px] shadow-2xl p-6 sm:p-10 ">
+    <section className="max-w-3xl mx-auto bg-white rounded-[28px] shadow-2xl p-6 sm:p-10">
       <h1 className="text-2xl sm:text-3xl font-extrabold text-main tracking-tight mb-6">
         กิจกรรม “{title}”
       </h1>
 
       <div className="relative aspect-[16/9] w-full rounded-3xl overflow-hidden shadow-[0_12px_30px_rgba(0,0,0,0.15)] mb-8">
         <ImageWithFallback
-          src={imgSrc || FALLBACK_IMG}
+          src={imgSrc}
           alt={title}
           fill
           sizes="(max-width: 768px) 100vw, 896px"
           className="object-cover"
           priority
           placeholder="blur"
-          blurDataURL="data:image/svg+xml;base64,..."
+          blurDataURL="data:image/gif;base64,R0lGODlhAQABAAAAACw="
         />
       </div>
 
@@ -180,19 +178,40 @@ export default function ActivityDetails({
         <InfoRow label="สถานที่จัดกิจกรรม">
           {data.location_text || "ไม่ระบุสถานที่"}
         </InfoRow>
-
         {data.contact_info && (
           <div>
             <b className="font-bold">รายละเอียดวิธีการสมัคร</b>
             <span className="mt-2 block">
-              <ContactInfoView info={data.contact_info} />
+              {Array.isArray(data.contact_info) ? (
+                data.contact_info.map((info, idx) => (
+                  <ContactInfoView key={idx} info={info} />
+                ))
+              ) : (
+                <ContactInfoView info={data.contact_info} />
+              )}
             </span>
           </div>
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-end gap-4">
-        <AddToLifeButton />
+      <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-4">
+        <AddToLifeButton
+          activityId={normalizedId}
+          startAt={data.start_at ?? undefined}
+          endAt={data.end_at ?? undefined}
+          forceDisabled={fromMine}
+          onDone={(res) => {
+            if (!res.ok) {
+              const msg =
+                typeof res.error === "string" && res.error.trim()
+                  ? res.error
+                  : "เพิ่มไม่สำเร็จ ลองใหม่อีกครั้ง";
+              toastError(msg);
+            } else {
+              toastSuccess("เพิ่มลงในตารางชีวิตสำเร็จ!");
+            }
+          }}
+        />
       </div>
     </section>
   );
