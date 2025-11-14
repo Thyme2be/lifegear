@@ -70,7 +70,7 @@ const TermsModal = () => {
           type="button"
           aria-label="Close"
           onClick={handleClose}
-          className="absolute right-3 top-3 rounded-full p-1 hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-[var(--color-main)]/40 cursor-pointer"
+          className="absolute right-3 top-3 rounded-full p-1 hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-main/40 cursor-pointer"
           ref={closeBtnRef}
         >
           <svg viewBox="0 0 20 20" className="h-5 w-5">
@@ -79,7 +79,7 @@ const TermsModal = () => {
         </button>
 
         <div className="px-6 pt-8 pb-4 text-center">
-          <h2 id="terms-title" className="text-2xl font-bold mb-4 text-[var(--color-main)]">
+          <h2 id="terms-title" className="text-2xl font-bold mb-4 text-main">
             เงื่อนไขการใช้งาน
           </h2>
 
@@ -95,7 +95,7 @@ const TermsModal = () => {
             <button
               type="button"
               onClick={handleClose}
-              className="px-6 py-2 rounded-full bg-[var(--color-main)] text-white font-semibold hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[var(--color-main)]/40 cursor-pointer"
+              className="px-6 py-2 rounded-full bg-main text-white font-semibold hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-main/40 cursor-pointer"
             >
               ปิด
             </button>

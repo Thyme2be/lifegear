@@ -13,7 +13,6 @@ export default async function Page({
 
   return (
     <main className="p-5 bg-primary">
-      {/* ActivityDetails เป็น client component อยู่แล้ว */}
       <ActivityDetails activityId={activityId} />
     </main>
   );

@@ -38,22 +38,25 @@ function extractError(err: unknown): string {
     if (status === 400) message = "คำขอไม่ถูกต้อง (400)";
     else if (status === 401) message = "รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง";
     else if (status === 403) message = "ไม่มีสิทธิ์เข้าถึง";
-    else if (status === 422) message = "ข้อมูลไม่ครบถ้วน/รูปแบบไม่ถูกต้อง (422)";
+    else if (status === 422)
+      message = "ข้อมูลไม่ครบถ้วน/รูปแบบไม่ถูกต้อง (422)";
     else if (status === 429) message = "พยายามบ่อยเกินไป กรุณาลองใหม่ภายหลัง";
-    else if (status && status >= 500) message = "เซิร์ฟเวอร์ขัดข้อง กรุณาลองใหม่";
+    else if (status && status >= 500)
+      message = "เซิร์ฟเวอร์ขัดข้อง กรุณาลองใหม่";
   }
 
   // 3) ถ้า loc ชี้ฟิลด์ ให้เติมข้อมูลช่วยเหลือในข้อความ
   const feed = Array.isArray(data?.detail) ? data.detail : data?.errors;
   if (Array.isArray(feed) && feed.length) {
     const fields = feed
-      .map((e) => String((e.loc || [])[ (e.loc || []).length - 1 ] || ""))
+      .map((e) => String((e.loc || [])[(e.loc || []).length - 1] || ""))
       .filter(Boolean);
     if (fields.length) {
       // แปลงชื่อคุ้นเคย
       const pretty = fields
         .map((k) =>
-          k.toLowerCase().includes("username") || k.toLowerCase().includes("student")
+          k.toLowerCase().includes("username") ||
+          k.toLowerCase().includes("student")
             ? "รหัสนักศึกษา"
             : k.toLowerCase().includes("password")
             ? "รหัสผ่าน"
@@ -77,64 +80,75 @@ const LoginBox = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-  // ดึงค่า checkbox จาก form โดยไม่ต้องแก้ UI/props ของ input
-  const formEl = e.currentTarget;
-  const termsEl = formEl.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
-  const acceptedTerms = !!termsEl?.checked;
+    // ดึงค่า checkbox จาก form โดยไม่ต้องแก้ UI/props ของ input
+    const formEl = e.currentTarget;
+    const termsEl = formEl.querySelector(
+      'input[type="checkbox"]'
+    ) as HTMLInputElement | null;
+    const acceptedTerms = !!termsEl?.checked;
 
-  // ฝั่งเรา validate ให้ขึ้น toast ชัดเจน
-  if (!studentId.trim()) {
-    toast.error("กรุณากรอกรหัสนักศึกษา");
-    return;
-  }
-  if (!password) {
-    toast.error("กรุณาใส่รหัสผ่าน");
-    return;
-  }
-  if (!acceptedTerms) {
-    toast.error("กรุณายอมรับเงื่อนไขก่อนเข้าสู่ระบบ");
-    return;
-  }
+    // ฝั่งเรา validate ให้ขึ้น toast ชัดเจน
+    if (!studentId.trim()) {
+      toast.error("กรุณากรอกรหัสนักศึกษา");
+      return;
+    }
+    if (!password) {
+      toast.error("กรุณาใส่รหัสผ่าน");
+      return;
+    }
+    if (!acceptedTerms) {
+      toast.error("กรุณายอมรับเงื่อนไขก่อนเข้าสู่ระบบ");
+      return;
+    }
 
-  // กันผู้ใช้กดรัว ๆ
-  if (submitting) return;
-  setSubmitting(true);
+    // กันผู้ใช้กดรัว ๆ
+    if (submitting) return;
+    setSubmitting(true);
 
-  const formData = new URLSearchParams();
-  formData.append("username", studentId.trim());
-  formData.append("password", password);
+    const formData = new URLSearchParams();
+    formData.append("username", studentId.trim());
+    formData.append("password", password);
 
-  try {
-    await toast.promise(
-      axios.post(apiRoutes.postLogin, formData, { withCredentials: true }),
-      {
-        pending: "กำลังเข้าสู่ระบบ…",
-        success: "เข้าสู่ระบบสำเร็จ!",
-        error: {
-          render({ data }) {
-            return extractError(data); // ใช้ parser เดิม
+    try {
+      await toast.promise(
+        axios.post(apiRoutes.postLogin, formData, { withCredentials: true }),
+        {
+          pending: "กำลังเข้าสู่ระบบ…",
+          success: "เข้าสู่ระบบสำเร็จ!",
+          error: {
+            render({ data }) {
+              // data คือ error object จาก axios
+              // ใช้ helper เดิมก่อน
+              let msg = extractError(data);
+
+              // ถ้าอยากเน้นเคส 401 โดยเฉพาะ
+              if (axios.isAxiosError(data) && data.response?.status === 401) {
+                msg = "รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง";
+              }
+
+              return msg;
+            },
           },
-        },
-      }
-    );
-
-    // สำเร็จ → ไปหน้าแรก
-    router.push("/");
-  } catch {
-    // อย่า toast ซ้ำใน catch นี้
-  } finally {
-    setSubmitting(false);
-  }
-};
-
+        }
+      );
+      // สำเร็จ → ไปหน้าแรก
+      router.push("/");
+    } catch {
+      // อย่า toast ซ้ำใน catch นี้
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <section className="relative w-[90%] max-w-md bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 shadow-2xl">
       <div className="w-full">
-        <h1 className="heading text-center text-black font-serif-thai">เข้าสู่ระบบ</h1>
+        <h1 className="heading text-center text-black font-serif-thai">
+          เข้าสู่ระบบ
+        </h1>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
           {/* Student ID */}
@@ -149,9 +163,13 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
               id="studentId"
               value={studentId}
               onInvalid={(e) =>
-                (e.target as HTMLInputElement).setCustomValidity("กรุณากรอกรหัสนักศึกษา")
+                (e.target as HTMLInputElement).setCustomValidity(
+                  "กรุณากรอกรหัสนักศึกษา"
+                )
               }
-              onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
+              onInput={(e) =>
+                (e.target as HTMLInputElement).setCustomValidity("")
+              }
               onChange={(e) => setStudentId(e.target.value)}
               className="w-full h-12 bg-transparent border no-spinner border-white rounded-2xl px-3 outline-none
                  text-black font-serif-thai p-4 font-semibold
@@ -172,9 +190,13 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                 id="password"
                 value={password}
                 onInvalid={(e) =>
-                  (e.target as HTMLInputElement).setCustomValidity("กรุณาใส่รหัสผ่าน")
+                  (e.target as HTMLInputElement).setCustomValidity(
+                    "กรุณาใส่รหัสผ่าน"
+                  )
                 }
-                onInput={(e) => (e.target as HTMLInputElement).setCustomValidity("")}
+                onInput={(e) =>
+                  (e.target as HTMLInputElement).setCustomValidity("")
+                }
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full h-12 bg-transparent border border-white rounded-2xl pl-3 pr-12 outline-none
                   text-black font-serif-thai p-4 font-semibold

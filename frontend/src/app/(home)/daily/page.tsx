@@ -55,7 +55,6 @@ export default function DailyPage() {
 
   const {
     thumbs: upcomingThumbs,
-    loading: thumbsLoading,
     error: thumbsError,
   } = useUpcomingThumbs(refreshTick);
 
@@ -251,12 +250,12 @@ export default function DailyPage() {
           <div className="w-full mt-10">
             <HeaderGrid title="กิจกรรมแนะนำ" />
             <div className="hidden sm:grid gap-2">
-              {!thumbsLoading && thumbsError && (
+              {!loading && thumbsError && (
                 <div className="text-center text-red-600 p-4 bg-red-50 rounded-lg">
                   {thumbsError}
                 </div>
               )}
-              {thumbsLoading ? (
+              {loading ? (
                 <div className="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
                   กำลังโหลดกิจกรรมแนะนำ…
                 </div>
@@ -274,10 +273,10 @@ export default function DailyPage() {
 
           {/* Mobile: ตารางล่าง */}
           <div className="sm:hidden mt-4">
-            {!thumbsLoading && thumbsError && (
+            {!loading && thumbsError && (
               <p className="text-center text-red-600">{thumbsError}</p>
             )}
-            {thumbsLoading ? (
+            {loading ? (
               <p className="text-gray-500 text-center">
                 กำลังโหลดกิจกรรมแนะนำ…
               </p>

@@ -10,7 +10,6 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main className="bg-primary">
-      {/* ไม่ต้อง Suspense แล้ว */}
       <BannerSliderWrapper />
 
       <article className="p-6 my-10 max-w-5xl mx-auto text-center ">
