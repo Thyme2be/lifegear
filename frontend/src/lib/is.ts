@@ -18,7 +18,7 @@ export function isHttpUrl(s: unknown): s is string {
   if (!isNonEmptyString(s)) return false;
   try {
     const u = new URL(s);
-    return u.protocol === "http:" || u.protocol === "https:";
+    return u.protocol === "https:" || u.protocol === "https:";
   } catch {
     return false;
   }
